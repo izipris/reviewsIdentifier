@@ -2,6 +2,7 @@ import nltk
 from utilities.contractions import contractions_dict
 from string import punctuation
 from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
 import pytypo
 stopword = stopwords.words('english')
 
@@ -45,4 +46,12 @@ class LanguageUtils:
         word_tokens = nltk.word_tokenize(text)
         removing_stopwords = [word for word in word_tokens if word not in stopword]
         return ' '.join(removing_stopwords)
+
+    @staticmethod
+    def lemmatize_sentence(text):
+        """Migrate words to their basic - e.g functionality to function"""
+        wordnet_lemmatizer = WordNetLemmatizer()
+        word_tokens = nltk.word_tokenize(text)
+        lemmatized_word = [wordnet_lemmatizer.lemmatize(word) for word in word_tokens]
+        return ' '.join(lemmatized_word)
 
