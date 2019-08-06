@@ -11,10 +11,11 @@ the matrix    the rating
 1 | 1 | 1       1
 0 | 0 | 0       1
 
-I did not implement the predict mehtod.
+I did not implement the predict method.
 The names I chose are not great and you are welcome to change them accordingly.
 """
 
+import random
 import math
 import numpy as np
 
@@ -33,18 +34,32 @@ class CustomTreeNode:
 
 
 class CustomTree:
-    def __init__(self, words_list, tagging_list, reviews, features, rf_matrix):
-        self.wordsList = words_list
-        self.tagging_list = tagging_list
-        self.reviews = reviews
-        self.features = features
-        self.rf_matrix = rf_matrix
-        self.__tree = build_tree(self.tagging_list, self.reviews, self.features, self.rf_matrix)
+    def __init__(self, tagging_list, rf_matrix):
+        self.__root = build_tree(tagging_list, rf_matrix)
 
-    # def rate(self, review):
+    def rate(self, review):
+        """
+        This gets a list of keywords and identifies which rating, the review
+        should receive using the tree.
+        :param review: the features that the review has and does not have
+        :type review: list
+        :return: the rating that is diagnosed
+        """
+        node = self.__root
+
+        while node.positive_answer is not None:  # going through the tree until
+            # getting to a leaf that has no children.
+
+            if review[node.dat] == 1:
+                node = node.positive_answer
+
+            else:
+                node = node.negative_answer
+
+        return node.data
 
 
-def build_tree(tag_list, reviews, features, rf_matrix):
+def build_tree(tag_list, rf_matrix):
     """
     Builds a tree
     :param tag_list: a list of all of the ratings of the reviews
@@ -57,9 +72,22 @@ def build_tree(tag_list, reviews, features, rf_matrix):
     """
     # zeroArray = np.zeros(len(tag_list), dtype=int)
     positive_reviews, negative_reviews = calculate_positive_and_negative(tag_list)
+    reviews, features = select_randomly(rf_matrix)
     node = add_custom_node(positive_reviews, negative_reviews, reviews, features, rf_matrix)
 
     return node
+
+
+def select_randomly(rf_matrix):
+    num_of_samples = random.randint(2, int(np.ma.size(rf_matrix, axis=0)))
+    # Select randomly reviews
+    reviews = np.random.randint(0, int(np.ma.size(rf_matrix, axis=0)) - 1, size=num_of_samples,
+                                dtype=int)
+    # Select randomly features
+    num_of_samples = random.randint(2, int(np.ma.size(rf_matrix, axis=1)))
+    features = random.sample(range(0, int(np.ma.size(rf_matrix, axis=1))), num_of_samples)
+
+    return reviews, features
 
 
 def add_custom_node(good_tags, bad_tags, reviews, features, rf_matrix, pure=False):

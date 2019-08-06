@@ -9,35 +9,34 @@ import datetime
 from sklearn import tree
 
 def get_words_matrix():
-    print(datetime.datetime.now())
-    X,y = DataUtils.preprocess_data(
-        'C:\\Users\\Natan\\Desktop\\reviewsIdentifier\\testai.txt')
-    #X,y = DataUtils.preprocess_data('C:\\Users\\idzipris\\Downloads\\COMMENTS_10K.txt')
-    print("Finished pre-process: " + str(datetime.datetime.now()))
-    a = [1,1,1]
-    b=[0,0,1,1]
-    print(set(a) & set(b))
-
-    data_holder = DataHolder(X, y)
-    data_holder.reviews_strip()
-    print("Finished strip: " + str(datetime.datetime.now()))
-    data_holder.extract_vocabulary()
-    print("Finished vocabulary (" + str(data_holder.get_words_list_length()) + "): " + str(datetime.datetime.now()))
-    data_holder.generate_reviews_words_matrix()
+    # print(datetime.datetime.now())
+    # X,y = DataUtils.preprocess_data(
+    #     'C:\\Users\\Natan\\Desktop\\reviewsIdentifier\\testai.txt')
+    # #X,y = DataUtils.preprocess_data('C:\\Users\\idzipris\\Downloads\\COMMENTS_10K.txt')
+    # print("Finished pre-process: " + str(datetime.datetime.now()))
+    # a = [1,1,1]
+    # b=[0,0,1,1]
+    # print(set(a) & set(b))
+    #
+    # data_holder = DataHolder(X, y)
+    # data_holder.reviews_strip()
+    # print("Finished strip: " + str(datetime.datetime.now()))
+    # data_holder.extract_vocabulary()
+    # print("Finished vocabulary (" + str(data_holder.get_words_list_length()) + "): " + str(datetime.datetime.now()))
+    # data_holder.generate_reviews_words_matrix()
     print("Finished words matrix: " + str(datetime.datetime.now()))
     ####
     # my test
     #####
     matrix = np.matrix([[0,0,1],[1,0,0],[0,1,0],[1,0,0],[0,1,1],[1,1,1],[0,0,0]])
     ratings = np.array([1,0,1,0,0,1,1])
-    tree1 = TreeNode.CustomTree(data_holder.extract_vocabulary(),ratings, [0,2,3,4,5,6],[0,2],
-                                matrix)
+    tree1 = TreeNode.CustomTree(ratings,matrix)
     #####
     # end of my test
     #####
     print('Done: ' + str(datetime.datetime.now()))
 
-    return data_holder.get_reviews_words_matrix(), y
+    return 0
 
 
 
