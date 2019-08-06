@@ -30,7 +30,7 @@ def get_words_matrix():
     #####
     matrix = np.matrix([[0,0,1],[1,0,0],[0,1,0],[1,0,0],[0,1,1],[1,1,1],[0,0,0]])
     ratings = np.array([1,0,1,0,0,1,1])
-    tree1 = TreeNode.CustomTree(data_holder.extract_vocabulary(),ratings, [0,1,2,3,4,5,6],[0,1,2],
+    tree1 = TreeNode.CustomTree(data_holder.extract_vocabulary(),ratings, [0,2,3,4,5,6],[0,2],
                                 matrix)
     #####
     # end of my test

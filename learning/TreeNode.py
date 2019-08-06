@@ -93,8 +93,6 @@ def add_custom_node(good_tags, bad_tags, reviews, features, rf_matrix, pure=Fals
         feature_used, positive_reviews, negative_reviews, feature_impurity = calculate_efficiency(
             features, reviews, good_tags, bad_tags, rf_matrix)
 
-        features.remove(feature_used)
-
         if feature_impurity < calc_node_gini(
              len(set(good_tags) & set(positive_reviews)) + len(set(good_tags) & set(
                     negative_reviews)),
@@ -108,11 +106,13 @@ def add_custom_node(good_tags, bad_tags, reviews, features, rf_matrix, pure=Fals
 
             # adding a positive subtree
             node.positive_answer = add_custom_node(good_tags, bad_tags, positive_reviews,
-                                                   features,  rf_matrix, pure)
+                                                   [item for item in features if item !=
+                                                    feature_used], rf_matrix, pure)
 
-            # adding a negative e subtree
+            # adding a negative subtree
             node.negative_answer = add_custom_node(good_tags, bad_tags,  negative_reviews,
-                                                   features, rf_matrix, pure)
+                                                   [item for item in features if item !=
+                                                    feature_used], rf_matrix, pure)
 
             return node
 
