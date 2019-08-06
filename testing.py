@@ -7,9 +7,10 @@ from learning.Tree import Tree
 import datetime
 from sklearn import tree
 
+
 def get_words_matrix():
     print(datetime.datetime.now())
-    X,y = DataUtils.preprocess_data('C:\\Users\\idzipris\\Downloads\\testai.txt')
+    X,y = DataUtils.preprocess_data('/Users/asherguedalia/Downloads/testai.txt')
     #X,y = DataUtils.preprocess_data('C:\\Users\\idzipris\\Downloads\\COMMENTS_10K.txt')
     print("Finished pre-process: " + str(datetime.datetime.now()))
 
@@ -24,9 +25,10 @@ def get_words_matrix():
     return data_holder.get_reviews_words_matrix(), y
 
 
+X, y = get_words_matrix()
+print(X)
+print(y)
 
-
-Xy = get_words_matrix()
 # training_set = Xy[0][0: 8000 ,  :], Xy[1][0: 8000]
 # test_set = Xy[0][8000: 9500 ,  :], Xy[1][8000: 9500]
 # clf = tree.DecisionTreeClassifier()
