@@ -28,9 +28,9 @@ def get_words_matrix():
     ####
     # my test
     #####
-    matrix = np.matrix([[0,0,1],[1,0,0],[0,1,0],[1,0,0],[0,1,1],[1,1,1],[0,0,0]])
-    ratings = np.array([1,0,1,0,0,1,1])
-    tree1 = TreeNode.CustomTree(ratings,matrix)
+    matrix = np.matrix([[0,0,1,1],[1,0,0,0],[0,1,0,1],[1,0,0,0],[0,1,1,0],[1,1,1,1],[0,0,0,1]])
+    # ratings = np.array([1,0,1,0,0,1,1])
+    tree1 = TreeNode.CustomTree(matrix)
     #####
     # end of my test
     #####

@@ -26,16 +26,20 @@ class CustomTreeNode:
     because each node is constructed based on the node above it.
     """
 
-    def __init__(self, reviews, data=None, pos=None, neg=None):
+    def __init__(self, matrix, data=None, pos=None, neg=None):
         self.data = data
         self.positive_answer = pos
         self.negative_answer = neg
-        self.reviews = reviews
+        self.reviews = matrix
 
 
 class CustomTree:
-    def __init__(self, tagging_list, rf_matrix):
-        self.__root = build_tree(tagging_list, rf_matrix)
+    def __init__(self, rf_matrix):
+        self.tagging = None
+        self.features = None
+        self.data = None
+        self.__root = self.build_tree(rf_matrix)
+
 
     def rate(self, review):
         """
@@ -59,143 +63,149 @@ class CustomTree:
         return node.data
 
 
-def build_tree(tag_list, rf_matrix):
-    """
-    Builds a tree
-    :param tag_list: a list of all of the ratings of the reviews
-    :param reviews: a list of review indexes
-    :type reviews this can be a list or type of numpy, but I thought it would be a list
-    :param features: a list of word indexes
-    :type  features list NOT NUMPY LIST (I used a remove function that only works on lists not numpy
-    :param rf_matrix: a matrix with words and reviews
-    :return: the root of the tree built
-    """
-    # zeroArray = np.zeros(len(tag_list), dtype=int)
-    positive_reviews, negative_reviews = calculate_positive_and_negative(tag_list)
-    reviews, features = select_randomly(rf_matrix)
-    node = add_custom_node(positive_reviews, negative_reviews, reviews, features, rf_matrix)
+    def build_tree(self, rf_matrix):
+        """
+        Builds a tree
+        :param rf_matrix: a matrix with words and reviews
+        :return: the root of the tree built
+        """
+        # zeroArray = np.zeros(len(tag_list), dtype=int)
+        self.select_randomly(rf_matrix)
+        positive_reviews, negative_reviews = calculate_positive_and_negative(self.tagging)
+        node = self.add_custom_node(positive_reviews, negative_reviews, self.features,
+                                    self.data)
 
-    return node
+        return node
 
 
-def select_randomly(rf_matrix):
-    num_of_samples = random.randint(2, int(np.ma.size(rf_matrix, axis=0)))
-    # Select randomly reviews
-    reviews = np.random.randint(0, int(np.ma.size(rf_matrix, axis=0)) - 1, size=num_of_samples,
-                                dtype=int)
-    # Select randomly features
-    num_of_samples = random.randint(2, int(np.ma.size(rf_matrix, axis=1)))
-    features = random.sample(range(0, int(np.ma.size(rf_matrix, axis=1))), num_of_samples)
-
-    return reviews, features
-
-
-def add_custom_node(good_tags, bad_tags, reviews, features, rf_matrix, pure=False):
-    """
-    makes a node for the tree
-    :param good_tags: a list of good tag indices
-    :param bad_tags:  a list of bad tag indices
-    :param reviews:  a list of indices that are to be calculated in the tree
-    :param features: a list of indices representing the features that are in the tree
-    :param rf_matrix: a review feature matrix
-    :param pure: an indicator if this is definitely a leaf node
-    :return: the node to the root of the tree
-    """
-    node = CustomTreeNode(reviews)
-
-    ######################
-    # this is the random forest ree that he had done in the video of random forest
-    #######
-    # sample two features
-    # if len(features) >= 2:
-    #     # randomFeatures = random.sample(features, 2)
-    #     feature_used, positive_reviews, negative_reviews, feature_impurity = calculate_efficiency(
-    #         randomFeatures, reviews, good_tags, bad_tags, rf_matrix)
-    #     # features.remove(randomFeatures)
-    #     features = [ feat for feat in features if feat not in randomFeatures]
-
-    ######################
-
-    # In order to continue building the tree there has to be a decrease in impurity
-    if not pure and len(features) > 0:
-        feature_used, positive_reviews, negative_reviews, feature_impurity = calculate_efficiency(
-            features, reviews, good_tags, bad_tags, rf_matrix)
-
-        if feature_impurity < calc_node_gini(
-             len(set(good_tags) & set(positive_reviews)) + len(set(good_tags) & set(
-                    negative_reviews)),
-             len(bad_tags & set(negative_reviews)) + len(bad_tags & set(positive_reviews)),
-             len(positive_reviews) + len(negative_reviews)):
-            pure = False
-            if feature_impurity == 0:
-                pure = True
-
-            node.data = feature_used
-
-            # adding a positive subtree
-            node.positive_answer = add_custom_node(good_tags, bad_tags, positive_reviews,
-                                                   [item for item in features if item !=
-                                                    feature_used], rf_matrix, pure)
-
-            # adding a negative subtree
-            node.negative_answer = add_custom_node(good_tags, bad_tags,  negative_reviews,
-                                                   [item for item in features if item !=
-                                                    feature_used], rf_matrix, pure)
-
-            return node
-
-    # adding leaves to the tree
-    good_reviews = len(set(reviews) & set(good_tags))
-    bad_reviews = len(set(reviews) & bad_tags)
-    if good_reviews > bad_reviews:
-        node.data = 1
-    else:
-        node.data = 0
-
-    return node
+    def select_randomly(self, rf_matrix):
+        """
+                Tree constructor.
+                Methodology: https://www.youtube.com/watch?v=7VeUPuFGJHk
+                :param Xy: A data matrix where (m-1) first columns are features, and m column is tagging
+                """
+        num_of_samples = random.randint(3, int(np.ma.size(rf_matrix, axis=0) / 2))
+        # Select randomly samples
+        random_pick_of_data = rf_matrix[np.random.choice(rf_matrix.shape[0], num_of_samples, replace=False), :]
+        data_num_of_columns = np.ma.size(random_pick_of_data, axis=1)
+        self.data = random_pick_of_data[:, :data_num_of_columns - 1]
+        self.tagging = random_pick_of_data[:, data_num_of_columns - 1]
+        # Select randomly features
+        self.features = random.sample(population=range(0, np.ma.size(self.data, axis=1)),
+                                        k=random.randint(1, int(np.ma.size(self.data, axis=1) / 2)))
 
 
-def calculate_efficiency(features, reviews, good_tags, bad_tags, rf_matrix):
-    """
-    This calculates which feature is the most efficient feature to use
-    :param features: a list of all indices of optional features
-    :param reviews: a list of all review indices
-    :param good_tags:  a list of good tag indices
-    :param bad_tags:  a list of bad tag indices
-    :param rf_matrix: a review feature matrix
-    :return: 4 things - the most efficient feature, the nodes that have that feature, the nodes
-    that do not,
-    the efficiency rating
-    """
-    feature_impurity = math.inf
-    feature = -1
-    positive_reviews = set()
-    negative_reviews = set()
+    def add_custom_node(self, good_tags, bad_tags, features, rf_matrix, pure=False):
+        """
+        makes a node for the tree
+        :param good_tags: a list of good tag indices
+        :param bad_tags:  a list of bad tag indices
+        :param reviews:  a list of indices that are to be calculated in the tree
+        :param features: a list of indices representing the features that are in the tree
+        :param rf_matrix: a review feature matrix
+        :param pure: an indicator if this is definitely a leaf node
+        :return: the node to the root of the tree
+        """
+        node = CustomTreeNode(rf_matrix)
 
-    for i in features:
-        column = rf_matrix[:, i]
-        positive_matches, negative_matches = calculate_positive_and_negative(column)
+        ######################
+        # this is the random forest ree that he had done in the video of random forest
+        #######
+        # sample two features
+        # if len(features) >= 2:
+        #     # randomFeatures = random.sample(features, 2)
+        #     feature_used, positive_reviews, negative_reviews, feature_impurity = calculate_efficiency(
+        #         randomFeatures, reviews, good_tags, bad_tags, rf_matrix)
+        #     # features.remove(randomFeatures)
+        #     features = [ feat for feat in features if feat not in randomFeatures]
 
-        # the indices of tags that are positive features
-        positive_feature = set(positive_matches) & set(reviews)
-        positive_feature_positive_review = positive_feature & set(good_tags)
-        positive_feature_negative_review = positive_feature & set(bad_tags)
+        ######################
 
-        # the indices of negative feature
-        negative_feature = set(negative_matches) & set(reviews)
-        negative_feature_positive_review = negative_feature & set(good_tags)
-        negative_feature_negative_review = negative_feature & set(bad_tags)
+        # In order to continue building the tree there has to be a decrease in impurity
+        if not pure and len(features) > 0:
+            feature_used, positive_reviews, negative_reviews, feature_impurity = \
+                self.calculate_efficiency(
+                features, good_tags, bad_tags, rf_matrix)
 
-        impurity = calc_impurity(positive_feature_positive_review, positive_feature_negative_review,
-                                 negative_feature_positive_review, negative_feature_negative_review,
-                                 len(positive_feature) + len(negative_feature))
-        if impurity < feature_impurity:
-            positive_reviews = positive_feature
-            negative_reviews = negative_feature
-            feature_impurity = impurity
-            feature = i
+            positive_reviews = list(positive_reviews)
+            negative_reviews = list(negative_reviews)
 
-    return feature, positive_reviews, negative_reviews, feature_impurity
+            if feature_impurity < calc_node_gini(
+                 len(good_tags), len(bad_tags), len(positive_reviews) + len(negative_reviews)):
+                pure = False
+                if feature_impurity == 0:
+                    pure = True
+
+                node.data = feature_used
+
+                # adding a positive subtree
+                node.positive_answer = self.add_custom_node(set(good_tags) & set(positive_reviews),
+                                                            set(bad_tags) & set(positive_reviews),
+                                                       [item for item in features if item !=
+                                                        feature_used],
+                                                            rf_matrix[positive_reviews, :], pure)
+
+                # adding a negative subtree
+                node.negative_answer = self.add_custom_node(set(good_tags) & set(negative_reviews),
+                                                            set(bad_tags) & set(negative_reviews),
+                                                       [item for item in features if item !=
+                                                        feature_used], rf_matrix[
+                                                                negative_reviews, :], pure)
+
+                return node
+
+        # adding leaves to the tree
+        good_reviews = len(good_tags)
+        bad_reviews = len(bad_tags)
+        if good_reviews > bad_reviews:
+            node.data = 1
+        else:
+            node.data = 0
+
+        return node
+
+
+    def calculate_efficiency(self, features, good_tags, bad_tags, rf_matrix):
+        """
+        This calculates which feature is the most efficient feature to use
+        :param features: a list of all indices of optional features
+        :param reviews: a list of all review indices
+        :param good_tags:  a list of good tag indices
+        :param bad_tags:  a list of bad tag indices
+        :param rf_matrix: a review feature matrix
+        :return: 4 things - the most efficient feature, the nodes that have that feature, the nodes
+        that do not,
+        the efficiency rating
+        """
+        feature_impurity = math.inf
+        feature = -1
+        positive_reviews = set()
+        negative_reviews = set()
+
+        for i in features:
+            column = rf_matrix[:, i]
+            positive_matches, negative_matches = calculate_positive_and_negative(column)
+
+            # the indices of tags that are positive features
+            # positive_feature = set(positive_matches) & set(reviews)
+            positive_feature_positive_review = set(positive_matches) & set(good_tags)
+            positive_feature_negative_review = set(positive_matches) & set(bad_tags)
+
+            # the indices of negative feature
+            # negative_feature = set(negative_matches) & set(reviews)
+            negative_feature_positive_review = set(negative_matches) & set(good_tags)
+            negative_feature_negative_review = set(negative_matches) & set(bad_tags)
+
+            impurity = calc_impurity(positive_feature_positive_review, positive_feature_negative_review,
+                                     negative_feature_positive_review, negative_feature_negative_review,
+                                     len(positive_matches) + len(negative_matches))
+            if impurity < feature_impurity:
+                positive_reviews = positive_matches
+                negative_reviews = negative_matches
+                feature_impurity = impurity
+                feature = i
+
+        return feature, positive_reviews, negative_reviews, feature_impurity
 
 
 def calc_impurity(pfpr, pfnr, nfpr, nfnr, total_amount):
