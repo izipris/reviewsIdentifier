@@ -39,8 +39,8 @@ class DataHolder:
         for word in self.__words_list:
             tmp = np.char.find(self.__reviews_vector, word).reshape(-1, 1)  # TODO: is inside "zipris"
             final = np.append(final, tmp.reshape(-1, 1), axis=1)
-            if count % 50 == 0:
-                print(str(count))
+            #if count % 50 == 0:
+            #    print(str(count))
             count += 1
         final[final >= 0] = 1
         final[final < 0] = 0
