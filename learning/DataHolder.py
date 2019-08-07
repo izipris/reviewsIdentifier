@@ -54,4 +54,6 @@ class DataHolder:
         """Returns the length of the words vector"""
         return len(self.__words_list)
 
+    def get_tagging_vector(self):
+        return self.__tagging_vector
 
