@@ -1,6 +1,7 @@
 import random
 import numpy as np
 from learning.Node import Node
+import gc
 
 
 class Tree:
@@ -10,20 +11,26 @@ class Tree:
         Methodology: https://www.youtube.com/watch?v=7VeUPuFGJHk
         :param Xy: A data matrix where (m-1) first columns are features, and m column is tagging
         """
-        self.__Xy = Xy
         # Select randomly samples
         if max_num_of_samples is None:
             max_num_of_samples = random.randint(3, int(np.ma.size(Xy, axis=0)))
         self.__random_pick_of_data = Xy[np.random.choice(Xy.shape[0], max_num_of_samples, replace=False), :]
         # Select randomly features
         if max_num_of_features is None:
-            max_num_of_features = int(np.ma.size(self.__random_pick_of_data, axis=1) / 2)
+            max_num_of_features = int(np.ma.size(self.__random_pick_of_data, axis=1)) - 1
         self.__features = random.sample(population=range(0, np.ma.size(self.__random_pick_of_data, axis=1) - 1),
                                         k=random.randint(3, max_num_of_features))
+        self.__dict = {}
+        for i in range(len(self.__features)):
+            self.__dict[i] = self.__features[i]
+        self.__temp = np.take(self.__random_pick_of_data, self.__features + [-1], axis=1)
+        self.__new_features = list(range(len(self.__features)))
+        self.__random_pick_of_data = None
+        gc.collect()
         self.__root = None
 
     def build(self):
-        self.__root = self.generate_node(self.__features, self.__random_pick_of_data, None)
+        self.__root = self.generate_node(self.__new_features, self.__temp, None)
 
     def predict(self, sample):
         node = self.__root
@@ -50,7 +57,7 @@ class Tree:
         if parent is not None:
             if np.min(np.take(gini_of_features, features_indices)) >= parent.get_gini():  # Parent has lower gini
                 return None
-        node = Node(feature_with_min_gini, np.min(np.take(gini_of_features, features_indices)))
+        node = Node(self.__dict[feature_with_min_gini], np.min(np.take(gini_of_features, features_indices)))
         next_feature_indices = [x for x in features_indices if x != feature_with_min_gini]
         data_feature_yes = data[data[:, feature_with_min_gini] == 1]
         data_feature_no = data[data[:, feature_with_min_gini] == 0]

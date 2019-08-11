@@ -11,7 +11,7 @@ class RandomForest:
 
     def build(self):
         for i in range(self.__num_of_trees):  # try on 300
-            t = Tree(self.__Xy.astype(int))
+            t = Tree(self.__Xy.astype(int), self.__tree_max_num_of_samples, self.__tree_max_num_of_features)
             t.build()
             self.__trees.append(t)
             print("Finished tree of " + str(t.get_number_of_features()) + " features: " + str(i))

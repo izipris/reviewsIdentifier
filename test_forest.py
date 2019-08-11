@@ -8,7 +8,7 @@ import datetime
 def get_words_matrix():
     print(datetime.datetime.now())
     #X,y = DataUtils.preprocess_data('C:\\Users\\idzipris\\Downloads\\testai.txt')
-    X,y = DataUtils.preprocess_data('C:\\Users\\idzipris\\Downloads\\COMMENTS_20K_REP.txt')
+    X,y = DataUtils.preprocess_data('C:\\Users\\idzipris\\Downloads\\COMMENTS_30K_REP.txt')
     print("Finished pre-process: " + str(datetime.datetime.now()))
     data_holder = DataHolder(X, y)
     data_holder.reviews_strip()
@@ -26,7 +26,7 @@ Xy = get_words_matrix()
 sets = DataUtils.split_to_sets(Xy, int(np.ma.size(Xy, axis=0) * 0.15))
 training_set = sets[0]
 test_set = sets[1]
-forest = RandomForest(50, training_set.astype(int))
+forest = RandomForest(500, training_set.astype(int), None, None)
 forest.build()
 print("Finished Forest: " + str(datetime.datetime.now()))
 counter = 0
