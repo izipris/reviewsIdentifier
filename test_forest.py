@@ -8,7 +8,7 @@ import datetime
 def get_words_matrix():
     print(datetime.datetime.now())
     #X,y = DataUtils.preprocess_data('C:\\Users\\idzipris\\Downloads\\testai.txt')
-    X,y = DataUtils.preprocess_data('C:\\Users\\idzipris\\Downloads\\COMMENTS_30K_REP.txt')
+    X, y = DataUtils.preprocess_data('C:\\Users\\idzipris\\Downloads\\COMMENTS_20K_REP.txt')
     print("Finished pre-process: " + str(datetime.datetime.now()))
     data_holder = DataHolder(X, y)
     data_holder.reviews_strip()
@@ -22,20 +22,30 @@ def get_words_matrix():
     return Xy
 
 
-Xy = get_words_matrix()
-sets = DataUtils.split_to_sets(Xy, int(np.ma.size(Xy, axis=0) * 0.15))
-training_set = sets[0]
-test_set = sets[1]
-forest = RandomForest(1000, training_set.astype(int), 7000, 3000) # Try (650, training_set.astype(int), 10000, 3000) on 30K:  77% accuracy
-                                                                  # Try (1000, training_set.astype(int), 7000, 3000) on 30K:  74% accuracy
-forest.build()
-print("Finished Forest: " + str(datetime.datetime.now()))
-counter = 0
-n = 0
-for sample in list(test_set):
-    prediction = forest.predict(sample[:len(sample) - 1])
-    if prediction == int(sample[-1]):
-        counter += 1
-    print("predicted for sample " + str(n + 1) + ": " + str(prediction) + ", and it's really: " + str(int(sample[-1])))
-    n += 1
-print("Accuracy: " + str(counter / np.ma.size(test_set, axis=0)))
+def run_random_forest_on_data(training_set, test_set):
+    forest = RandomForest(1000, training_set.astype(int), 7000,
+                          3000)  # Try (650, training_set.astype(int), 10000, 3000) on 30K:  77% accuracy
+    # Try (1000, training_set.astype(int), 7000, 3000) on 30K:  74% accuracy
+    forest.build()
+    print("Finished Forest: " + str(datetime.datetime.now()))
+    print("Calculating accuracy of random forest...")
+    counter = 0
+    n = 0
+    for sample in list(test_set):
+        prediction = forest.predict(sample[:len(sample) - 1])
+        if prediction == int(sample[-1]):
+            counter += 1
+        n += 1
+    print("Accuracy: " + str(counter / np.ma.size(test_set, axis=0)))
+
+
+def main():
+    Xy = get_words_matrix()
+    sets = DataUtils.split_to_sets(Xy, int(np.ma.size(Xy, axis=0) * 0.15))
+    training_set = sets[0]
+    test_set = sets[1]
+    run_random_forest_on_data(training_set, test_set)
+
+
+if __name__ == "__main__":
+    main()
