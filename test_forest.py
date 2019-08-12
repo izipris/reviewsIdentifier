@@ -26,7 +26,8 @@ Xy = get_words_matrix()
 sets = DataUtils.split_to_sets(Xy, int(np.ma.size(Xy, axis=0) * 0.15))
 training_set = sets[0]
 test_set = sets[1]
-forest = RandomForest(500, training_set.astype(int), None, None)
+forest = RandomForest(1000, training_set.astype(int), 7000, 3000) # Try (650, training_set.astype(int), 10000, 3000) on 30K:  77% accuracy
+                                                                  # Try (1000, training_set.astype(int), 7000, 3000) on 30K:  74% accuracy
 forest.build()
 print("Finished Forest: " + str(datetime.datetime.now()))
 counter = 0
