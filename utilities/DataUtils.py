@@ -29,7 +29,7 @@ class DataUtils:
         delete_indices = []
         i = 0
         for row in X:
-            if DataUtils.is_string_encoding_corrupted(row[0]): #or DataUtils.is_string_encoding_corrupted(row[1]):
+            if DataUtils.is_string_encoding_corrupted(row[0]):
                 delete_indices.append(i)
             i += 1
         X = np.delete(X, delete_indices, axis=0)

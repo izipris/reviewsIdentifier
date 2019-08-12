@@ -31,9 +31,11 @@ class Tree:
         self.__root = None
 
     def build(self):
+        """Generates a single tree by the properties provided to the constructor."""
         self.__root = self.generate_node(self.__new_features, self.__reduced_data, None)
 
     def predict(self, sample):
+        """Returns a prediction for 'sample' - a words vector in the terms of the tree. 1-Positive, 0-Negative"""
         node = self.__root
         feature = node.get_feature_index()
         while not isinstance(feature, bool):
@@ -47,6 +49,13 @@ class Tree:
         return 0
 
     def generate_node(self, features_indices, data, parent):
+        """
+        A helper function for 'build'. Generating a tree with recursion.
+        :param features_indices: The features' indices to base the tree on.
+        :param data: The words matrix to base the tree on.
+        :param parent: The parent node of the tree will be generated
+        :return: A node which is the root of the generated tree
+        """
         if np.ma.size(data, axis=0) == 0:
             return None
         if len(features_indices) < 1:  # No more features to separate
@@ -79,6 +88,7 @@ class Tree:
         return node
 
     def calculate_gini_of_features(self, Xy):
+        """Calculates the gini of all the features in the provided matrix"""
         tagged_true = Xy[Xy[:, -1] == 1]
         tagged_false = Xy[Xy[:, -1] == 0]
         feature_1_yes = np.sum(tagged_true, axis=0)
@@ -97,4 +107,5 @@ class Tree:
         return feature_final_gini
 
     def get_number_of_features(self):
+        """Get the total number of features of this tree"""
         return len(self.__features)

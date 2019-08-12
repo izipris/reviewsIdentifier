@@ -12,6 +12,7 @@ class DataHolder:
         self.__reviews_words_matrix = None
         self.__vocab_dict = {}
         self.__sk_reviews_vector = []
+        self.__vectorizer = None
 
     def reviews_strip(self):
         """For each review - move to lower case, remove: numbers, punctuation, stop words, contractions"""
@@ -46,7 +47,7 @@ class DataHolder:
         final = np.array([[]]*len(self.__reviews_vector))
         count = 0
         for word in self.__words_list:
-            tmp = np.char.find(self.__reviews_vector, word).reshape(-1, 1)  # TODO: is inside "zipris"
+            tmp = np.char.find(self.__reviews_vector, word).reshape(-1, 1)
             final = np.append(final, tmp.reshape(-1, 1), axis=1)
             if count % 50 == 0:
                 print(str(count))
@@ -56,8 +57,8 @@ class DataHolder:
         self.__reviews_words_matrix = final
 
     def sk_generate_reviews_words_matrix(self):
-        vectorizer = CountVectorizer()
-        X = vectorizer.fit_transform(self.__sk_reviews_vector)
+        self.__vectorizer = CountVectorizer()
+        X = self.__vectorizer.fit_transform(self.__sk_reviews_vector)
         self.__reviews_words_matrix = np.array(X.toarray())
 
 
@@ -72,3 +73,5 @@ class DataHolder:
     def get_tagging_vector(self):
         return self.__tagging_vector
 
+    def get_vectorizer(self):
+        return self.__vectorizer
