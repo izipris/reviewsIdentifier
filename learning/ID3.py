@@ -201,6 +201,7 @@ x = pd.DataFrame(X)
 root = create_tree(X, y)
 
 # predict label
+print('testing')
 label = predict_label(x, root)
 print('label is: ', label)
 print()
