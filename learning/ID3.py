@@ -68,17 +68,14 @@ def tree_builder(df, node):
 
 
 
-def create_tree(X, y):
+def create_tree(df):
     """
 
-    :param X: matrix
-    :param y: tagging
+    :param df: data frame of X and y merged
     :return:
     """
-    df = pd.concat([pd.DataFrame(X), pd.DataFrame(y)], axis=1, ignore_index=True)
-    df.iloc[:, -1] = df.iloc[:, -1].astype(int)
+    df.iloc[:, -1] = df.iloc[:, -1].astype(int) # make lables an int to add and subtract with them
 
-    #df = df.iloc[[1, 2, 3, 4, 5, 6, 7, 8], [1, 2, 3, 4, 5, -1]]  # todo for testing
     status = df_leaf_status(df)
 
     if type(status) == int:
@@ -191,23 +188,43 @@ def predict_label(x, root):
 
 ### test
 X, y = get_words_matrix()
+print('begining testing')
 #X = np.array([[1, 0, 1], [1, 0, 0], [0,0,1]], np.int32)
 #y = np.array([1,1,0])
 df = pd.concat([pd.DataFrame(X), pd.DataFrame(y)], axis=1, ignore_index=True)
 
-x = pd.DataFrame(X)
+#split to training and testing data:
+train = df.sample(frac=0.8,random_state=200).reset_index(drop=True)
+test_Xy = df.drop(train.index).reset_index(drop=True)
+test = test_Xy.iloc[:, :-1]
+true_y = test_Xy.iloc[:, -1].tolist()
 
+
+print('training df is:')
+print(train)
+print('\ntesting df is:')
+print(test)
+print()
 # create tree
-root = create_tree(X, y)
+print('creating tree')
+root = create_tree(train)
 
 # predict label
-print('testing')
-label = predict_label(x, root)
+print('prediciting label')
+label = predict_label(test, root)
 print('label is: ', label)
 print()
 print('tree is: ')
 print(root)
 
+
+#check error:
+error = 0
+for i in range(len(label)):
+    if int(label[i]) != int(true_y[i]):
+        print(label[i], 'vs', true_y[i])
+        error += 1
+print('error rate is: ', error/len(label))
 
 
 
