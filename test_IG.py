@@ -36,7 +36,7 @@ def main():
 
     print('words matrix is')
     print(pd.DataFrame(words_matrix))
-    ig_tree = IGClassifier(words_matrix)
+    ig_tree = IGClassifier(words_matrix, training_fraction=0.5)
     ig_tree.train()
     ig_tree.check_error()
 

@@ -1,8 +1,6 @@
 # python file responsible for creating a classification tree using the ID3 algorithm
 import pandas as pd
 import numpy as np
-
-from testing import get_words_matrix
 import math
 
 
@@ -146,22 +144,22 @@ class IGClassifier:
         # calc for attribute a when all values are 0 how many are tagged 0 and how many are tagged 1
 
         total = len(Xy)
-        #print(total)
+
 
         S_zero = Xy.loc[Xy[a] == 0]
         total_0 = len(S_zero)
         num_of_pos_0 = S_zero.iloc[:, -1].sum()
-        #print('num of pos with atrr=0 is:', num_of_pos_0)
+
         num_of_neg_0 = total_0 - num_of_pos_0
         if num_of_pos_0 == 0 or num_of_neg_0 == 0:
             H0 = 0
         else:
             H0 = -(num_of_pos_0/total_0) * math.log(num_of_pos_0/total_0, 2) - (num_of_neg_0/total_0) * math.log(num_of_neg_0/total_0, 2)
 
-        #print('HO is', H0)
+
         S_one = Xy.loc[Xy[a] == 1]
         num_of_pos_1 = S_one.iloc[:, -1].sum()
-        #print('num of pos with atrr=1 is:', num_of_pos_1)
+
         total_1 = len(S_one)
         num_of_neg_1 = total_1 - num_of_pos_1
         if num_of_pos_1 == 0 or num_of_neg_1 == 0:
@@ -169,9 +167,6 @@ class IGClassifier:
         else:
             H1 = -(num_of_pos_1/total_1) * math.log(num_of_pos_1/total_1, 2) - (num_of_neg_1/total_1) * math.log(num_of_neg_1/total_1, 2)
 
-        #print(S_one)
-        #print(S_zero)
-        #print(total_0, total_1)
 
         entropy = (total_0 / total) * H0 + (total_1 / total) * H1
         return 1 - entropy
@@ -180,7 +175,7 @@ class IGClassifier:
     def get_max_IG_attr(Xy):
         best_col = 1
         max_IG = 0
-        for col in Xy.columns[:-1]:  # for each col todo-----------maybe i need len+1
+        for col in Xy.columns[:-1]:  # for each col
             cur_IG = IGClassifier.calc_IG(col, Xy)
             if max_IG < cur_IG:
                 max_IG = cur_IG
