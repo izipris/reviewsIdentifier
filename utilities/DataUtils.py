@@ -1,4 +1,6 @@
 import csv
+import random
+
 from ftfy.badness import sequence_weirdness
 import numpy as np
 
@@ -27,7 +29,7 @@ class DataUtils:
         delete_indices = []
         i = 0
         for row in X:
-            if DataUtils.is_string_encoding_corrupted(row[0]): #or DataUtils.is_string_encoding_corrupted(row[1]):
+            if DataUtils.is_string_encoding_corrupted(row[0]):
                 delete_indices.append(i)
             i += 1
         X = np.delete(X, delete_indices, axis=0)
@@ -38,6 +40,15 @@ class DataUtils:
         """Returns the provided data matrix as (X,y) where X- data, y - tagging"""
         cols = np.ma.size(data, axis=1)
         return data[:, :cols - 1], data[:, cols - 1]
+
+    @staticmethod
+    def split_to_sets(data, test_set_size):
+        data_size = np.ma.size(data, axis=0)
+        test_indices = set(random.sample(range(data_size), test_set_size))
+        train_indices = set(range(data_size)) - test_indices
+        return np.take(data, list(train_indices), axis=0), np.take(data, list(test_indices), axis=0)
+
+
 
     @staticmethod
     def preprocess_data(data_file_path):
