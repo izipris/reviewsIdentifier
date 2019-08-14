@@ -19,7 +19,57 @@ class IGNode:
             # its a leaf
             return 'leaf label: ' + str(self.label)
 
-        return str(self.attribute) + '--->' + str(self.one) + '|||' +  str(self.zero)
+        return str(self.attribute) + '--->' + str(self.one) + '|||' + str(self.zero)
+
+    def display(self):
+        lines, _, _, _ = self._display_aux()
+        for line in lines:
+            print(line)
+
+    def _display_aux(self):
+        """Returns list of strings, width, height, and horizontal coordinate of the root."""
+        # No child.
+        if self.one is None and self.zero is None:
+            line = '%s' % self.label
+            width = len(line)
+            height = 1
+            middle = width // 2
+            return [line], width, height, middle
+
+        # Only left child.
+        if self.one is None:
+            lines, n, p, x = self.zero._display_aux()
+            s = '%s' % self.attribute
+            u = len(s)
+            first_line = (x + 1) * ' ' + (n - x - 1) * '_' + s
+            second_line = x * ' ' + '/' + (n - x - 1 + u) * ' '
+            shifted_lines = [line + u * ' ' for line in lines]
+            return [first_line, second_line] + shifted_lines, n + u, p + 2, n + u // 2
+
+        # Only right child.
+        if self.zero is None:
+            lines, n, p, x = self.one._display_aux()
+            s = '%s' % self.attribute
+            u = len(s)
+            first_line = s + x * '_' + (n - x) * ' '
+            second_line = (u + x) * ' ' + '\\' + (n - x - 1) * ' '
+            shifted_lines = [u * ' ' + line for line in lines]
+            return [first_line, second_line] + shifted_lines, n + u, p + 2, u // 2
+
+        # Two children.
+        left, n, p, x = self.zero._display_aux()
+        right, m, q, y = self.one._display_aux()
+        s = '%s' % self.attribute
+        u = len(s)
+        first_line = (x + 1) * ' ' + (n - x - 1) * '_' + s + y * '_' + (m - y) * ' '
+        second_line = x * ' ' + '/' + (n - x - 1 + u + y) * ' ' + '\\' + (m - y - 1) * ' '
+        if p < q:
+            left += [n * ' '] * (q - p)
+        elif q < p:
+            right += [m * ' '] * (p - q)
+        zipped_lines = zip(left, right)
+        lines = [first_line, second_line] + [a + u * ' ' + b for a, b in zipped_lines]
+        return lines, n + m + u, max(p, q) + 2, n + u // 2
 
     def get_height(self):
         h = 0
@@ -36,14 +86,11 @@ class IGNode:
 
 class IGClassifier:
 
-    def __init__(self, Xy, training_fraction=0.5):
-        print('initializing IGClassifier')
-        ####important####
-        # X, y = get_words_matrix()
-        # df = pd.concat([pd.DataFrame(X), pd.DataFrame(y)], axis=1, ignore_index=True)
-        ### im assuming what is df up here us what Xy comes out to be down there
+    def __init__(self, Xy, training_fraction=0.5, max_depth=math.inf):
+
         Xy = pd.DataFrame(Xy)
         self.root = None
+        self.max_depth = max_depth
 
         train = Xy.sample(frac=training_fraction, random_state=200).reset_index(drop=True)
         self.Xy = train
@@ -88,6 +135,7 @@ class IGClassifier:
             if int(label[i]) != int(self.true_y[i]):
                 error += 1
         print('error rate is: ', error / len(label))
+        return error
 
     def create_tree(self):
         """
@@ -109,15 +157,26 @@ class IGClassifier:
         df_zero = self.Xy.loc[self.Xy[a] == 0]
         root.one = IGNode()
         root.zero = IGNode()
-        IGClassifier.tree_builder(df_one.drop(a, axis=1), root.one)
-        IGClassifier.tree_builder(df_zero.drop(a, axis=1), root.zero)
+        self.tree_builder(df_one.drop(a, axis=1), root.one, 1)
+        self.tree_builder(df_zero.drop(a, axis=1), root.zero, 1)
 
         self.root = root
 
-    @staticmethod
-    def tree_builder(cur_Xy, node):
+    def tree_builder(self, cur_Xy, node, depth):
         """recursive function"""
         status = IGClassifier.df_leaf_status(cur_Xy)
+
+        ####
+        # first overfitting fix attempt #
+        ###
+        if depth > self.max_depth:
+            s = cur_Xy.iloc[:, -1].sum()
+            if s > len(cur_Xy) / 2:  # so there are more positives than negatives
+                node.label = 1
+                return
+            node.label = 0
+            return
+        #############################
 
         if type(status) == int:
             node.label = status
@@ -130,8 +189,8 @@ class IGClassifier:
         df_zero = cur_Xy.loc[cur_Xy[a] == 0]
         node.one = IGNode()
         node.zero = IGNode()
-        IGClassifier.tree_builder(df_one.drop(a, axis=1), node.one)
-        IGClassifier.tree_builder(df_zero.drop(a, axis=1), node.zero)
+        self.tree_builder(df_one.drop(a, axis=1), node.one, depth+1)
+        self.tree_builder(df_zero.drop(a, axis=1), node.zero, depth+1)
 
     @staticmethod
     def calc_IG(a, Xy):
@@ -145,7 +204,6 @@ class IGClassifier:
 
         total = len(Xy)
 
-
         S_zero = Xy.loc[Xy[a] == 0]
         total_0 = len(S_zero)
         num_of_pos_0 = S_zero.iloc[:, -1].sum()
@@ -155,7 +213,6 @@ class IGClassifier:
             H0 = 0
         else:
             H0 = -(num_of_pos_0/total_0) * math.log(num_of_pos_0/total_0, 2) - (num_of_neg_0/total_0) * math.log(num_of_neg_0/total_0, 2)
-
 
         S_one = Xy.loc[Xy[a] == 1]
         num_of_pos_1 = S_one.iloc[:, -1].sum()

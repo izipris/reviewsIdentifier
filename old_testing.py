@@ -6,11 +6,14 @@ from learning.DataHolder import DataHolder
 from learning.Tree import Tree
 import datetime
 from sklearn import tree
+# todo- cross validation to reduce overfitting
+# pruning - once tree is ready take away leafs by going over each leaf removing it and checking results
+# model selection? feature selection -- try limiting depth
 
 
-def get_words_matrix():
+def get_words_matrix(filename):
     #print(datetime.datetime.now())
-    X,y = DataUtils.preprocess_data('COMMENTS_LESS.txt')
+    X,y = DataUtils.preprocess_data(filename)
     #X,y = DataUtils.preprocess_data('C:\\Users\\idzipris\\Downloads\\COMMENTS_10K.txt')
     #print("Finished pre-process: " + str(datetime.datetime.now()))
 
@@ -24,15 +27,3 @@ def get_words_matrix():
     #print('Done: ' + str(datetime.datetime.now()))
 
     return data_holder.get_reviews_words_matrix(), y
-
-
-X, y = get_words_matrix()
-#print(X)
-#print(y)
-
-# training_set = Xy[0][0: 8000 ,  :], Xy[1][0: 8000]
-# test_set = Xy[0][8000: 9500 ,  :], Xy[1][8000: 9500]
-# clf = tree.DecisionTreeClassifier()
-# clf = clf.fit(training_set[0], training_set[1])
-# for i in range(len(test_set[1])):
-#     print(
