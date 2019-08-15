@@ -26,59 +26,87 @@ def get_model():
 def main():
 
     # the new version
-    #model = get_model()
-    #words_matrix = model[0]
-
+    model = get_model()
+    Xy = pd.DataFrame(model[0])
 
     # the old version to csv:
-    X, y = get_words_matrix('smallTest.txt')
-    words_matrix = pd.concat([pd.DataFrame(X), pd.DataFrame(y)], axis=1, ignore_index=True)
+    #X, y = get_words_matrix('COMMENTS_LESS.txt')
+    #Xy = pd.concat([pd.DataFrame(X), pd.DataFrame(y)], axis=1, ignore_index=True)
 
+    # use loading csv
     #words_matrix.to_csv(path_or_buf='preprocess.csv')
     #from loaded preprocessed:
     #words_matrix = pd.read_csv('preprocess.csv')
 
-    print('words matrix is')
+    train_Xy = Xy.sample(frac=0.5, random_state=1000).reset_index(drop=True)
+    test_Xy = Xy.drop(train_Xy.index).reset_index(drop=True)
+    test_set = test_Xy.iloc[:, :-1]  # test set, no labels
+    true_y = test_Xy.iloc[:, -1].tolist()  # true labels of test set
 
-    print(pd.DataFrame(words_matrix))
+    print('words matrix is')
+    words_matrix = train_Xy
+    print(words_matrix)
 
     # plot train error as function of max depth todo- plot 3d function as function of traininfraction also!!
     # than plot as function of data set size
-
+    n = 1
     errors = []
-    for i in range(20):
-        ig_tree = IGClassifier(words_matrix, training_fraction=0.7, max_depth=i)
+    for i in range(n):
+        ig_tree = IGClassifier(words_matrix, training_fraction=0.5)
         ig_tree.train()
-        err = ig_tree.check_error()
-        errors.append(err)
+
+        label = ig_tree.predict(test_set)
+        # calc error
+        error = 0
+        for i in range(len(label)):
+            if int(label[i]) != int(true_y[i]):
+                error += 1
+        print('error before prune is: ', error / len(label))
+
+        ig_tree.prune()
+
+        label = ig_tree.predict(test_set)
+        # calc error
+        error = 0
+        for i in range(len(label)):
+            if int(label[i]) != int(true_y[i]):
+                error += 1
+        print('error rate after prune is: ', error / len(label))
+        errors.append(error/len(label))
         ig_tree.root.display()
 
     # importing the required module
 
 
     # x axis values
-    x = list(range(20))
+    x = list(range(1, len(errors)+1))
     # corresponding y axis values
     y = errors
-
     # plotting the points
-    plt.plot(x, y)
-    plt.xlabel('Max IG Tree Depth')
-    plt.ylabel('Error Rate')
-    plt.title('670 sample data set, 870 features \n Training fraction: 0.7')
+    #plt.plot(x, y)
+    #plt.xlabel('Max IG Tree Depth')
+    #plt.ylabel('Error Rate')
+    #plt.title('1300 sample data set, 2800 features \n Training fraction: 0.5')
 
     # function to show the plot
-    plt.show()
+    #plt.show()
 
 
     # check on input:
 
-    #while True:
-    #    s = input("Type a review about a cellphone: ")
-    #    a = model[1].get_vectorizer().transform([s]).toarray()
-    #    print(a)
-    #    print(pd.DataFrame(a))
-    #    print("Prediction (1-Positive, 0-Negative): " + str(ig_tree.predict(a)))
+    while True:
+        s = input("Type a review about a cellphone: ")
+        a = model[1].get_vectorizer().transform([s]).toarray()
+        df = pd.DataFrame(a)
+        a = a[0]
+        print(a)
+        for i in range(len(a)):
+            if a[i] == 1:
+                print(i, ' ', end='')
+        print()
+
+
+        print("Prediction (1-Positive, 0-Negative): " + str(ig_tree.predict(df)))
 
 if __name__ == "__main__":
     main()

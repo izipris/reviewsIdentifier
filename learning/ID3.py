@@ -1,24 +1,21 @@
 # python file responsible for creating a classification tree using the ID3 algorithm
 import pandas as pd
-import numpy as np
 import math
 
 
 class IGNode:
-
-    def __init__(self, attribute=None, label=None, one=None, zero=None):
+    def __init__(self, attribute=None, label=None, one=None, zero=None, parent=None):
         self.attribute = attribute  # the attribute this node splits by
         self.label = label  # in case this node is a leaf it has no attribute but only a label
         self.one = one  # subtree for value is one
         self.zero = zero  # subtree for value is zero
+        self.parent = parent
 
     def __str__(self):
         h = self.get_height()
-
         if h == 0:
             # its a leaf
             return 'leaf label: ' + str(self.label)
-
         return str(self.attribute) + '--->' + str(self.one) + '|||' + str(self.zero)
 
     def display(self):
@@ -87,25 +84,40 @@ class IGNode:
 class IGClassifier:
 
     def __init__(self, Xy, training_fraction=0.5, max_depth=math.inf):
+        """
+
+        :param Xy: all data in matrix
+        :param training_fraction: fraction of samples to use for training
+        :param max_depth: max depth IG tree should go
+        """
 
         Xy = pd.DataFrame(Xy)
-        self.root = None
+        self.root = None  # root of IG tree
         self.max_depth = max_depth
 
         train = Xy.sample(frac=training_fraction, random_state=200).reset_index(drop=True)
-        self.Xy = train
+        self.Xy = train  # training set
 
         test_Xy = Xy.drop(train.index).reset_index(drop=True)
-        self.test_set = test_Xy.iloc[:, :-1]
-        self.true_y = test_Xy.iloc[:, -1].tolist()
+        self.test_set = test_Xy.iloc[:, :-1]  # hold out set no labels
+        self.true_y = test_Xy.iloc[:, -1].tolist()  # true labels of holdout set
 
     def train(self):
+        """
+        train method for classifier
+        :return:
+        """
         print('beginning training')
         self.create_tree()
         print('ended training')
 
     def predict(self, x=None):
-        if not x:
+        """
+        method to predict the test data, or x if given as input
+        :param x: a data frame to predict, if not specified, our own holdout set will be used
+        :return:
+        """
+        if x is None:
             x = self.test_set
 
         if self.root is None:
@@ -115,60 +127,141 @@ class IGClassifier:
         predictions = []
         for i, row in x.iterrows():
             cur = self.root
-            while cur.label is None:
-                cur_attr_val = x.iloc[i, cur.attribute]
+            while cur.label is None:  # traverse tree by where it points me, until we reach our leaf
                 if x.iloc[i, cur.attribute] == 1:
-
                     cur = cur.one
                 else:
                     cur = cur.zero
 
-            predictions.append(cur.label)
+            predictions.append(cur.label)  # prediction is label of leaf we've reached
         return predictions
 
-    def check_error(self):
-        print('checking error rate')
+    def prune(self):
+        """
+        prunes tree according to hold out data
+        :return:
+        """
+        # run dfs on tree and find leaves
+        print('-------')
+        print('tree before pruning: ')
+        self.root.display()
+        self.dfs(self.root.one)
+        self.dfs(self.root.zero)
+        print('after pruning: ')
+        self.root.display()
+        print('------')
+
+    def dfs(self, cur):
+        if cur.zero is None and cur.one is None: # its a leaf
+            self.prune_leaf(cur)
+
+        if cur.zero is not None:
+            self.dfs(cur.zero)
+
+        if cur.one is not None:
+            self.dfs(cur.one)
+
+    def prune_leaf(self, cur):
+
+        # calc error while leaf is here
+        print('------prune leaf-----')
+        print('error before pruning this leaf: ')
+        e1 = self.check_hold_out_error()
+        # remove leaf => replace parent with label that is most examples from training set
+
+        s = self.Xy.iloc[:, -1].sum()
+        if s > len(self.Xy) / 2:  # so there are more positives than negatives
+            cur.parent.label = 1
+
+        else:
+            cur.parent.label = 0
+
+        r0 = cur.parent.zero
+        r1 = cur.parent.one
+        cur.parent.zero = None
+        cur.parent.one = None
+        print('**** this is how tree looks if i were to prune ****')
+        self.root.display()
+        print('***************************************************')
+
+        # calc error whithout leaf
+        print('error after pruning: ')
+        e2 = self.check_hold_out_error()
+
+        # if error is not better now, bring back leaf
+        if e1 < e2:
+            print('was better before i pruned, going back')
+            # restore tree how it was
+            cur.parent.zero = r0
+            cur.parent.one = r1
+            cur.parent.label = None
+        else:
+            print('succesful prune tree is now: ')
+            self.root.display()
+        print('------end prune leaf--------')
+
+    def check_hold_out_error(self):
+        """
+        method for checking error rate once this classifier is trained
+        error rate is checked according to our stored holdout data that we kept on the side
+        :return:
+        """
         # check error:
         label = self.predict()
         error = 0
         for i in range(len(label)):
             if int(label[i]) != int(self.true_y[i]):
                 error += 1
-        print('error rate is: ', error / len(label))
-        return error
+        print('hold out error rate is: ', error / len(label))
+        return error/ len(label)
+
+    def check_train_error(self):
+        """
+        method for checking error rate once this classifier is trained
+        error rate is checked on our trained data
+        :return:
+        """
+        # check error:
+        label = self.predict(self.Xy.iloc[:, :-1])  # use train set without labels
+        error = 0
+        for i in range(len(label)):
+            if int(label[i]) != int(self.true_y[i]):
+                error += 1
+        print('training error rate is: ', error / len(label))
+        return error / len(label)
 
     def create_tree(self):
         """
-
+        create tree for our data
         :return:
         """
-        self.Xy.iloc[:, -1] = self.Xy.iloc[:, -1].astype(int) # make lables an int to add and subtract with them
+        self.Xy.iloc[:, -1] = self.Xy.iloc[:, -1].astype(int) # make labels an int to add and subtract with them
 
         status = IGClassifier.df_leaf_status(self.Xy)
 
-        if type(status) == int:
+        if type(status) == int:  # so root of tree is a leaf
             return IGNode(label=status)
 
-        a = IGClassifier.get_max_IG_attr(self.Xy)
+        a = IGClassifier.get_max_IG_attr(self.Xy)  # gets best attribute to split by through IG
 
-        root = IGNode(a)
-        # now for each value, 0 or 1 that was in
+        root = IGNode(a)  # create first split of tree
+        # now split our data in to 2, one for each possible value of attribute
         df_one = self.Xy.loc[self.Xy[a] == 1]
         df_zero = self.Xy.loc[self.Xy[a] == 0]
-        root.one = IGNode()
-        root.zero = IGNode()
+        # create kids
+        root.one = IGNode(parent=root)
+        root.zero = IGNode(parent=root)
+        # call recursive function to build each child while dropping attribute a
         self.tree_builder(df_one.drop(a, axis=1), root.one, 1)
         self.tree_builder(df_zero.drop(a, axis=1), root.zero, 1)
 
         self.root = root
 
     def tree_builder(self, cur_Xy, node, depth):
-        """recursive function"""
+        """recursive helper function similar to create tree """
         status = IGClassifier.df_leaf_status(cur_Xy)
 
-        ####
-        # first overfitting fix attempt #
-        ###
+        # depth control
         if depth > self.max_depth:
             s = cur_Xy.iloc[:, -1].sum()
             if s > len(cur_Xy) / 2:  # so there are more positives than negatives
@@ -176,29 +269,43 @@ class IGClassifier:
                 return
             node.label = 0
             return
-        #############################
 
         if type(status) == int:
             node.label = status
             return
 
         a = IGClassifier.get_max_IG_attr(cur_Xy)
-        # now for each value, 0 or 1 that was in
         node.attribute = a
         df_one = cur_Xy.loc[cur_Xy[a] == 1]
         df_zero = cur_Xy.loc[cur_Xy[a] == 0]
-        node.one = IGNode()
-        node.zero = IGNode()
+        node.one = IGNode(parent=node)
+        node.zero = IGNode(parent=node)
         self.tree_builder(df_one.drop(a, axis=1), node.one, depth+1)
         self.tree_builder(df_zero.drop(a, axis=1), node.zero, depth+1)
 
     @staticmethod
+    def get_max_IG_attr(Xy):
+        """
+        get attribute with best IG from Xy
+        :param Xy:
+        :return:
+        """
+        best_col = 1
+        max_IG = 0
+        for col in Xy.columns[:-1]:  # for each col
+            cur_IG = IGClassifier.calc_IG(col, Xy)
+            if max_IG < cur_IG:
+                max_IG = cur_IG
+                best_col = col
+        return best_col
+
+    @staticmethod
     def calc_IG(a, Xy):
         """
-        calc entropy of attribute a of data set X
+        calc entropy of attribute a of data set Xy
         :param: a column number
-        :param: X the data frame
-        :return: entropy
+        :param: Xy the data frame
+        :return: IG
         """
         # calc for attribute a when all values are 0 how many are tagged 0 and how many are tagged 1
 
@@ -224,35 +331,21 @@ class IGClassifier:
         else:
             H1 = -(num_of_pos_1/total_1) * math.log(num_of_pos_1/total_1, 2) - (num_of_neg_1/total_1) * math.log(num_of_neg_1/total_1, 2)
 
-
         entropy = (total_0 / total) * H0 + (total_1 / total) * H1
         return 1 - entropy
 
     @staticmethod
-    def get_max_IG_attr(Xy):
-        best_col = 1
-        max_IG = 0
-        for col in Xy.columns[:-1]:  # for each col
-            cur_IG = IGClassifier.calc_IG(col, Xy)
-            if max_IG < cur_IG:
-                max_IG = cur_IG
-                best_col = col
-        return best_col
-
-    @staticmethod
     def df_leaf_status(Xy):
         """
-
-        :param df:
-        :return: the label if all lables are equal, otherwise 'not a leaf'
+        :param Xy: data to get leaf of
+        :return: the label if all labels are equal, otherwise 'not a leaf'
         """
         s = Xy.iloc[:, -1].sum()
         if len(Xy.columns) == 1:
             print('reached max depth, creating leaf')
             # so there are no more attributes to split by
-            if s > len(Xy) / 2: # so there are more positives than negatives
+            if s > len(Xy) / 2:  # so there are more positives than negatives
                 return 1
-
             return 0
 
         if s == len(Xy):
