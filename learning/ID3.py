@@ -95,7 +95,7 @@ class IGClassifier:
         self.root = None  # root of IG tree
         self.max_depth = max_depth
 
-        train = Xy.sample(frac=training_fraction, random_state=200).reset_index(drop=True)
+        train = Xy.sample(frac=training_fraction, random_state=150).reset_index(drop=True)  # randaom_state=200
         self.Xy = train  # training set
 
         test_Xy = Xy.drop(train.index).reset_index(drop=True)
@@ -142,14 +142,14 @@ class IGClassifier:
         :return:
         """
         # run dfs on tree and find leaves
-        print('-------')
-        print('tree before pruning: ')
-        self.root.display()
+        #print('-------')
+        #print('tree before pruning: ')
+        #self.root.display()
         self.dfs(self.root.one)
         self.dfs(self.root.zero)
-        print('after pruning: ')
-        self.root.display()
-        print('------')
+        #print('after pruning: ')
+        #self.root.display()
+        #print('------')
 
     def dfs(self, cur):
         if cur.zero is None and cur.one is None: # its a leaf
@@ -164,8 +164,8 @@ class IGClassifier:
     def prune_leaf(self, cur):
 
         # calc error while leaf is here
-        print('------prune leaf-----')
-        print('error before pruning this leaf: ')
+        #print('------prune leaf-----')
+        #print('error before pruning this leaf: ')
         e1 = self.check_hold_out_error()
         # remove leaf => replace parent with label that is most examples from training set
 
@@ -180,25 +180,25 @@ class IGClassifier:
         r1 = cur.parent.one
         cur.parent.zero = None
         cur.parent.one = None
-        print('**** this is how tree looks if i were to prune ****')
-        self.root.display()
-        print('***************************************************')
+        #print('**** this is how tree looks if i were to prune ****')
+        #self.root.display()
+        #print('***************************************************')
 
         # calc error whithout leaf
-        print('error after pruning: ')
+        #print('error after pruning: ')
         e2 = self.check_hold_out_error()
 
         # if error is not better now, bring back leaf
         if e1 < e2:
-            print('was better before i pruned, going back')
+            #print('was better before i pruned, going back')
             # restore tree how it was
             cur.parent.zero = r0
             cur.parent.one = r1
             cur.parent.label = None
         else:
-            print('succesful prune tree is now: ')
-            self.root.display()
-        print('------end prune leaf--------')
+            print('succesful prune!')
+        #    self.root.display()
+        #print('------end prune leaf--------')
 
     def check_hold_out_error(self):
         """
@@ -290,7 +290,7 @@ class IGClassifier:
         :param Xy:
         :return:
         """
-        best_col = 1
+        best_col = 0  # bug prone!!! todo - some key error is happening becuase this was bestcol = 1
         max_IG = 0
         for col in Xy.columns[:-1]:  # for each col
             cur_IG = IGClassifier.calc_IG(col, Xy)
