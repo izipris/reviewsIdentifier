@@ -27,3 +27,22 @@ def get_words_matrix(filename):
     print('Done: ' + str(datetime.datetime.now()))
 
     return data_holder.get_reviews_words_matrix(), y
+
+
+with open('COMMENTS_30K_REP.txt', encoding="utf8", errors='ignore') as f:
+    lines = f.readlines()
+desired_lines = lines[1::40]
+
+with open('COMMENTS_PARTIAL.txt', 'w') as f:
+    for l in desired_lines:
+        f.write("%s" % l)
+
+# the old version - should be identical:
+#model = get_model(new=False, filename='COMMENTS_LESS.txt')
+#X = model[0][0]
+#y = model[0][1]
+#Xy = pd.concat([pd.DataFrame(X), pd.DataFrame(y)], axis=1, ignore_index=True)
+
+# the old version:
+#X, y = get_words_matrix('COMMENTS_LESS.txt')
+#Xy = pd.concat([pd.DataFrame(X), pd.DataFrame(y)], axis=1, ignore_index=True)

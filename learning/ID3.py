@@ -95,7 +95,7 @@ class IGClassifier:
         self.root = None  # root of IG tree
         self.max_depth = max_depth
 
-        train = Xy.sample(frac=training_fraction, random_state=150).reset_index(drop=True)  # randaom_state=200
+        train = Xy.sample(frac=training_fraction).reset_index(drop=True)  # randaom_state=200
         self.Xy = train  # training set
 
         test_Xy = Xy.drop(train.index).reset_index(drop=True)
@@ -149,12 +149,11 @@ class IGClassifier:
 
         if len(x) == 0:
             raise Exception('cannot prune with empty holdout set')
-        self.dfs(self.root.one)
-        self.dfs(self.root.zero)
-        x = self.test_set
 
-        if len(x) == 0:
-            raise Exception('cannot predict on empty data set')
+        if self.root.one is not None:
+            self.dfs(self.root.one)
+        if self.root.zero is not None:
+            self.dfs(self.root.zero)
 
     def dfs(self, cur):
         if cur.zero is None and cur.one is None: # its a leaf
@@ -233,8 +232,7 @@ class IGClassifier:
         for i in range(len(label)):
             if int(label[i]) != int(self.true_y[i]):
                 error += 1
-        print('hold out error rate is: ', error / len(label))
-        return error/ len(label)
+        return error/len(label)
 
     def check_train_error(self):
         """
