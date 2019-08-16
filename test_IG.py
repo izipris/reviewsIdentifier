@@ -8,6 +8,14 @@ from old_testing import get_words_matrix
 import matplotlib.pyplot as plt
 
 
+def calc_error(pred_label, true_y):
+    error = 0
+    for i in range(len(pred_label)):
+        if int(pred_label[i]) != int(true_y[i]):
+            error += 1
+    return error / len(pred_label)
+
+
 def get_model(new, filename):
     print("Started work on model: " + str(datetime.datetime.now()))
     X, y = DataUtils.preprocess_data(filename)
@@ -32,7 +40,7 @@ def get_model(new, filename):
 def main():
 
     # the new version
-    model = get_model(new=True, filename='smallTest.txt')
+    model = get_model(new=True, filename='COMMENTS_3.5K.txt')
     Xy = pd.DataFrame(model[0])
 
 
@@ -47,7 +55,7 @@ def main():
     #Xy = pd.concat([pd.DataFrame(X), pd.DataFrame(y)], axis=1, ignore_index=True)
 
 
-    train_Xy = Xy.sample(frac=0.5, random_state=151).reset_index(drop=True)  # random_state = 0
+    train_Xy = Xy.sample(frac=0.8, random_state=109).reset_index(drop=True)  # random_state = 0
     test_Xy = Xy.drop(train_Xy.index).reset_index(drop=True)
     test_set = test_Xy.iloc[:, :-1]  # test set, no labels
     true_y = test_Xy.iloc[:, -1].tolist()  # true labels of test set
@@ -60,34 +68,27 @@ def main():
 
     # plot train error as function of max depth todo- plot 3d function as function of traininfraction also!!
     # than plot as function of data set size
-    n = 1
+    n = 3
     errors = []
     for i in range(n):
-        ig_tree = IGClassifier(words_matrix, training_fraction=0.5)
+        ig_tree = IGClassifier(words_matrix, max_depth=i, training_fraction=0.5)
         print('start time: ', datetime.datetime.now())
         ig_tree.train()
         print('end time: ', datetime.datetime.now())
 
         label = ig_tree.predict(test_set)
         # calc error
-        error = 0
-        for i in range(len(label)):
-            if int(label[i]) != int(true_y[i]):
-                error += 1
-        print('error before prune is: ', error / len(label))
+        e = calc_error(label, true_y)
+        print('error before prune is: ', e)
         ig_tree.root.display()
         print('------now going to prune-------')
 
         ig_tree.prune()
 
         label = ig_tree.predict(test_set)
-        # calc error
-        error = 0
-        for i in range(len(label)):
-            if int(label[i]) != int(true_y[i]):
-                error += 1
-        print('error rate after prune is: ', error / len(label))
-        errors.append(error/len(label))
+        e = calc_error(label, true_y)
+        print('error rate after prune is: ', e)
+        errors.append(e)
         ig_tree.root.display()
         print(IGClassifier.get_attributes_from_tree(ig_tree.root))
 

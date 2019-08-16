@@ -120,6 +120,9 @@ class IGClassifier:
         if x is None:
             x = self.test_set
 
+        if len(x) == 0:
+            raise Exception('cannot predict on empty data set')
+
         if self.root is None:
             print('must train first!')
             return
@@ -142,14 +145,16 @@ class IGClassifier:
         :return:
         """
         # run dfs on tree and find leaves
-        #print('-------')
-        #print('tree before pruning: ')
-        #self.root.display()
+        x = self.test_set
+
+        if len(x) == 0:
+            raise Exception('cannot prune with empty holdout set')
         self.dfs(self.root.one)
         self.dfs(self.root.zero)
-        #print('after pruning: ')
-        #self.root.display()
-        #print('------')
+        x = self.test_set
+
+        if len(x) == 0:
+            raise Exception('cannot predict on empty data set')
 
     def dfs(self, cur):
         if cur.zero is None and cur.one is None: # its a leaf
@@ -212,10 +217,6 @@ class IGClassifier:
         return lst
 
 
-
-
-
-
     def check_hold_out_error(self):
         """
         method for checking error rate once this classifier is trained
@@ -223,7 +224,11 @@ class IGClassifier:
         :return:
         """
         # check error:
+
         label = self.predict()
+        if len(label) == 0:
+            raise Exception('No hold out Data!!!')
+
         error = 0
         for i in range(len(label)):
             if int(label[i]) != int(self.true_y[i]):
