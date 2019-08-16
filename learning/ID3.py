@@ -200,6 +200,22 @@ class IGClassifier:
         #    self.root.display()
         #print('------end prune leaf--------')
 
+    @staticmethod
+    def get_attributes_from_tree(cur):
+        if cur.label is not None:  # its a leaf
+            return []
+        lst = [cur.attribute]
+        if cur.zero is not None:
+            lst += IGClassifier.get_attributes_from_tree(cur.zero)
+        if cur.one is not None:
+            lst += IGClassifier.get_attributes_from_tree(cur.one)
+        return lst
+
+
+
+
+
+
     def check_hold_out_error(self):
         """
         method for checking error rate once this classifier is trained
@@ -323,8 +339,8 @@ class IGClassifier:
 
         S_one = Xy.loc[Xy[a] == 1]
         num_of_pos_1 = S_one.iloc[:, -1].sum()
-
         total_1 = len(S_one)
+
         num_of_neg_1 = total_1 - num_of_pos_1
         if num_of_pos_1 == 0 or num_of_neg_1 == 0:
             H1 = 0
@@ -333,6 +349,29 @@ class IGClassifier:
 
         entropy = (total_0 / total) * H0 + (total_1 / total) * H1
         return 1 - entropy
+
+    @staticmethod
+    def calc_ratio(a, Xy):
+        """
+        calc ratio of split on a, not IG
+        best ratio is closest to 0 or 1
+        todo- not in use as of now is not operational
+        :param a:
+        :param Xy:
+        :return:
+        """
+        total = len(Xy)
+
+        S_zero = Xy.loc[Xy[a] == 0]
+        total_0 = len(S_zero)
+        num_of_pos_0 = S_zero.iloc[:, -1].sum()
+        num_of_neg_0 = total_0 - num_of_pos_0
+
+        S_one = Xy.loc[Xy[a] == 1]
+        total_1 = len(S_one)
+        num_of_pos_1 = S_one.iloc[:, -1].sum()
+        num_of_neg_1 = total_1 - num_of_pos_1
+
 
     @staticmethod
     def df_leaf_status(Xy):

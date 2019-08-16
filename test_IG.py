@@ -32,7 +32,7 @@ def get_model(new, filename):
 def main():
 
     # the new version
-    model = get_model(new=True, filename='COMMENTS_3.5K.txt')
+    model = get_model(new=True, filename='smallTest.txt')
     Xy = pd.DataFrame(model[0])
 
 
@@ -52,20 +52,11 @@ def main():
     test_set = test_Xy.iloc[:, :-1]  # test set, no labels
     true_y = test_Xy.iloc[:, -1].tolist()  # true labels of test set
 
-    print(test_Xy.loc[test_Xy[1752] == 1])
-    x1= test_Xy.loc[test_Xy[1752] == 1]
-    print('sum 1 is')
-    print(x1.sum(axis = 0, skipna = True) )
-    print('----')
-    print(test_Xy.loc[test_Xy[1752] == 0])
-    x2 = test_Xy.loc[test_Xy[1752] == 0]
-    print('sum 0 is: ')
-    print(x2.sum(axis=0, skipna=True))
+
 
     print('words matrix is')
     words_matrix = train_Xy
     print(words_matrix)
-    exit(0)
 
     # plot train error as function of max depth todo- plot 3d function as function of traininfraction also!!
     # than plot as function of data set size
@@ -98,6 +89,7 @@ def main():
         print('error rate after prune is: ', error / len(label))
         errors.append(error/len(label))
         ig_tree.root.display()
+        print(IGClassifier.get_attributes_from_tree(ig_tree.root))
 
     # importing the required module
 
@@ -134,3 +126,8 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+
+    ##### 'phone' has like 360 bad apperances as 120 good appearnces in comments 3.5k ###### todo- for if i want to test with ratio
