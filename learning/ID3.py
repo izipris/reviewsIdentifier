@@ -119,6 +119,8 @@ class IGClassifier:
         """
         if x is None:
             x = self.test_set
+        else:
+            x = pd.DataFrame(x)  # now accepts numpy array too, todo- test
 
         if len(x) == 0:
             raise Exception('cannot predict on empty data set')
