@@ -1,7 +1,7 @@
 # python file responsible for creating a classification tree using the ID3 algorithm
 import pandas as pd
 import math
-
+from heapq import nlargest
 
 class IGNode:
     def __init__(self, attribute=None, label=None, one=None, zero=None, parent=None):
@@ -95,7 +95,7 @@ class IGClassifier:
         self.root = None  # root of IG tree
         self.max_depth = max_depth
 
-        train = Xy.sample(frac=training_fraction).reset_index(drop=True)  # randaom_state=200
+        train = Xy.sample(frac=training_fraction, random_state=901).reset_index(drop=True)  # randaom_state=200
         self.Xy = train  # training set
 
         test_Xy = Xy.drop(train.index).reset_index(drop=True)
@@ -204,18 +204,6 @@ class IGClassifier:
         #    self.root.display()
         #print('------end prune leaf--------')
 
-    @staticmethod
-    def get_attributes_from_tree(cur):
-        if cur.label is not None:  # its a leaf
-            return []
-        lst = [cur.attribute]
-        if cur.zero is not None:
-            lst += IGClassifier.get_attributes_from_tree(cur.zero)
-        if cur.one is not None:
-            lst += IGClassifier.get_attributes_from_tree(cur.one)
-        return lst
-
-
     def check_hold_out_error(self):
         """
         method for checking error rate once this classifier is trained
@@ -303,13 +291,28 @@ class IGClassifier:
         self.tree_builder(df_zero.drop(a, axis=1), node.zero, depth+1)
 
     @staticmethod
+    def get_n_best_IG_attributes(n, Xy):
+        """
+        assumes cols in Xy >> n
+        :param n: num of attributes
+        :param Xy: data frame
+        :return: list of n best IG attributes
+
+        """
+        if n < 1:
+            return []
+        Xy.iloc[:, -1] = Xy.iloc[:, -1].astype(int)  # make labels an int to add and subtract with them
+        a = IGClassifier.get_max_IG_attr(Xy)
+        return IGClassifier.get_n_best_IG_attributes(n - 1, Xy.drop(a, axis=1)) + [a]
+
+    @staticmethod
     def get_max_IG_attr(Xy):
         """
         get attribute with best IG from Xy
         :param Xy:
         :return:
         """
-        best_col = 0  # bug prone!!! todo - some key error is happening becuase this was bestcol = 1
+        best_col = Xy.columns[:-1][0]  # first col by default
         max_IG = 0
         for col in Xy.columns[:-1]:  # for each col
             cur_IG = IGClassifier.calc_IG(col, Xy)
@@ -317,6 +320,26 @@ class IGClassifier:
                 max_IG = cur_IG
                 best_col = col
         return best_col
+
+    @staticmethod
+    def get_n_best_attributes_fast(n, Xy):
+        res = []
+        l = len(Xy.columns)
+        print('getting ', n, 'best features out of', l, 'features')
+        i = 0
+        p = 0
+        for col in Xy.columns[:-1]:  # for each col
+            i += 1
+            p1 = int((i / l) * 100)
+            if p1 > p:
+                print(p1, '%  ', end='')
+            p = p1
+
+            cur_IG = IGClassifier.calc_IG(col, Xy)
+            res.append((cur_IG, col))
+        largest = nlargest(n,res)
+        return [x[1] for x in largest]
+
 
     @staticmethod
     def calc_IG(a, Xy):
@@ -375,7 +398,6 @@ class IGClassifier:
         num_of_pos_1 = S_one.iloc[:, -1].sum()
         num_of_neg_1 = total_1 - num_of_pos_1
 
-
     @staticmethod
     def df_leaf_status(Xy):
         """
@@ -398,3 +420,14 @@ class IGClassifier:
             return 0
         else:
             return 'not a leaf'
+
+    @staticmethod
+    def get_attributes_from_tree(cur):
+        if cur.label is not None:  # its a leaf
+            return []
+        lst = [cur.attribute]
+        if cur.zero is not None:
+            lst += IGClassifier.get_attributes_from_tree(cur.zero)
+        if cur.one is not None:
+            lst += IGClassifier.get_attributes_from_tree(cur.one)
+        return lst
