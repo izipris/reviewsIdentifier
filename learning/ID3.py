@@ -20,8 +20,9 @@ class IGNode:
 
     def display(self):
         lines, _, _, _ = self._display_aux()
-        for line in lines:
-            print(line)
+        with open('tree_visualize.txt', 'w') as f:
+            for line in lines:
+                f.write(line + '\n')
 
     def _display_aux(self):
         """Returns list of strings, width, height, and horizontal coordinate of the root."""
@@ -133,7 +134,7 @@ class IGClassifier:
         for i, row in x.iterrows():
             cur = self.root
             while cur.label is None:  # traverse tree by where it points me, until we reach our leaf
-                if x.iloc[i, cur.attribute] == 1:
+                if x.loc[x.index[i], cur.attribute] == 1: #x.iloc[i, cur.attribute] == 1:
                     cur = cur.one
                 else:
                     cur = cur.zero
