@@ -4,7 +4,7 @@ from scipy.stats import norm
 
 PI = math.pi
 NO_STD = 1/math.sqrt(2*PI)
-TRAIN_RATIO = 0.70
+TRAIN_RATIO = 0.85
 
 
 # probability for single instance
@@ -51,9 +51,9 @@ class Classifier:
             # if i%100 == 0:
             #     print(i, " error is: ", error)
         # get random again
-        # idx = np.random.randint(full_size, size=int(full_size * TRAIN_RATIO))
-        # training_set = Xy[idx, :]
-        # test_set = np.delete(Xy, idx, axis=0)
+        idx = np.random.randint(full_size, size=int(full_size * TRAIN_RATIO))
+        training_set = Xy[idx, :]
+        test_set = np.delete(Xy, idx, axis=0)
         best_attr = min(attr_errors, key=attr_errors.get)  # get best attr
         best_attributes = [best_attr]  # remember it
         bayes = Classifier(training_set, [best_attr])  # remember min error
@@ -68,7 +68,6 @@ class Classifier:
                 bayes = Classifier(training_set, np.concatenate((
                     best_attributes, [i])))
                 error = bayes.error(test_set[:, :-1], test_set[:, -1])
-                # print(best_attributes, i, " error is: ", error)
                 if error < min_error:
                     # print("added ", i, "training-test error: ", error)
                     best_attributes.append(i)  # add i to best attributes
