@@ -31,7 +31,7 @@ def get_words_matrix(filename):
 
 with open('COMMENTS_30K_REP.txt', encoding="utf8", errors='ignore') as f:
     lines = f.readlines()
-desired_lines = lines[1::10]
+desired_lines = lines[1::3]
 
 with open('COMMENTS_PARTIAL.txt', 'w') as f:
     for l in desired_lines:

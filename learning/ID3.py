@@ -312,7 +312,7 @@ class IGClassifier:
         :param Xy:
         :return:
         """
-        best_col = 0
+        best_col = Xy.columns[:-1][0]  # first col by default
         max_IG = 0
         for col in Xy.columns[:-1]:  # for each col
             cur_IG = IGClassifier.calc_IG(col, Xy)
@@ -324,11 +324,20 @@ class IGClassifier:
     @staticmethod
     def get_n_best_attributes_fast(n, Xy):
         res = []
+        l = len(Xy.columns)
+        print('getting ', n, 'best features out of', l, 'features')
+        i = 0
+        p = 0
         for col in Xy.columns[:-1]:  # for each col
-            print('at col: ', col)
+            i += 1
+            p1 = int((i / l) * 100)
+            if p1 > p:
+                print(p1, '%  ', end='')
+            p = p1
+
             cur_IG = IGClassifier.calc_IG(col, Xy)
             res.append((cur_IG, col))
-        largest = nlargest(n ,res)
+        largest = nlargest(n,res)
         return [x[1] for x in largest]
 
 
