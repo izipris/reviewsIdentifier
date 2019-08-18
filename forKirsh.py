@@ -21,7 +21,7 @@ true_y = test_Xy.iloc[:, -1].tolist()  # true labels of test set
 
 words_matrix = train_Xy
 # ----- THE NEW ONE ------
-attributes = IGClassifier.get_n_best_IG_attributes(n=20, Xy=words_matrix)
+attributes = IGClassifier.get_n_best_attributes_fast(n=20, Xy=words_matrix)
 print('here you go Kirsh, best attributes: ', attributes)
 
 

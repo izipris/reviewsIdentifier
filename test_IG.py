@@ -4,7 +4,6 @@ import pandas as pd
 from learning.DataHolder import DataHolder
 from learning.ID3 import IGClassifier
 import datetime
-from old_testing import get_words_matrix
 import matplotlib.pyplot as plt
 
 
@@ -40,29 +39,27 @@ def get_model(new, filename):
 def main():
 
     # the new version
-    #model = get_model(new=True, filename='COMMENTS_PARTIAL.txt')
-    #Xy = pd.DataFrame(model[0])
+    model = get_model(new=True, filename='COMMENTS_PARTIAL.txt')
+    Xy = pd.DataFrame(model[0])
 
-    model = get_model(new=False, filename='COMMENTS_PARTIAL.txt')
-    X = model[0][0]
-    y = model[0][1]
-    Xy = pd.concat([pd.DataFrame(X), pd.DataFrame(y)], axis=1, ignore_index=True)
+    # old version
+    #model = get_model(new=False, filename='COMMENTS_PARTIAL.txt')
+    #X = model[0][0]
+    #y = model[0][1]
+    #Xy = pd.concat([pd.DataFrame(X), pd.DataFrame(y)], axis=1, ignore_index=True)
 
-
-    train_Xy = Xy.sample(frac=0.8).reset_index(drop=True)  # random_state = 0
+    train_Xy = Xy.sample(frac=0.5).reset_index(drop=True)  # random_state = 0
     test_Xy = Xy.drop(train_Xy.index).reset_index(drop=True)
     test_set = test_Xy.iloc[:, :-1]  # test set, no labels
     true_y = test_Xy.iloc[:, -1].tolist()  # true labels of test set
-
-
 
     print('words matrix is')
     words_matrix = train_Xy
     print(words_matrix)
 
-    #best_atts = IGClassifier.get_n_best_IG_attributes(30, Xy)
-    #print('best attributes are: ', best_atts)
-
+    best_atts = IGClassifier.get_n_best_attributes_fast(20, Xy)
+    print('best attributes are: ', best_atts)
+    exit(0)
     # plot train error as function of max depth todo- plot 3d function as function of traininfraction also!!
     # than plot as function of data set size
     n = 30
@@ -105,14 +102,15 @@ def main():
     plt.xlabel('max depth')
     plt.ylabel('Test Error Rate')
     plt.legend(['y = Pre Prune', 'y = Post Prune'], loc='upper left')
-    plt.title('750 total sample data set, 730 features \n Training Set fraction: 0.8 \n 80% of that used for holdout data')
+    plt.title('1000 total sample data set, 900 features \n Training Set fraction: 0.8 \n 80% of that used for holdout data')
 
     # function to show the plot
     plt.show()
 
 
-    # check on input:
-    if False:
+    # run input check at end
+    run_check = True
+    if run_check:
         while True:
             s = input("Type a review about a cellphone: ")
             a = model[1].get_vectorizer().transform([s]).toarray()
