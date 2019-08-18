@@ -20,7 +20,13 @@ test_set = test_Xy.iloc[:, :-1]  # test set, no labels
 true_y = test_Xy.iloc[:, -1].tolist()  # true labels of test set
 
 words_matrix = train_Xy
+# ----- THE NEW ONE ------
+attributes = IGClassifier.get_n_best_IG_attributes(n=20, Xy=words_matrix)
+print('here you go Kirsh, best attributes: ', attributes)
 
+
+# --- the old -----
+"""
 # here choose your max depth of the tree, if not specified will be math.inf, this will let u handle the run time
 ig_tree = IGClassifier(words_matrix, max_depth=8, training_fraction=0.5)  # rest of fraction used to prune
 ig_tree.train()
@@ -46,6 +52,7 @@ print('pruned tree is:')
 ig_tree.root.display()
 
 
-# what u wanted:
+# the old one i did for you:
 attributes = IGClassifier.get_attributes_from_tree(ig_tree.root)
 print(attributes)
+"""

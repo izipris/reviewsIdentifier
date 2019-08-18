@@ -303,13 +303,30 @@ class IGClassifier:
         self.tree_builder(df_zero.drop(a, axis=1), node.zero, depth+1)
 
     @staticmethod
+    def get_n_best_IG_attributes(n, Xy):
+        """
+        assumes cols in Xy >> n
+        :param n: num of attributes
+        :param Xy: data frame
+        :return: list of n best IG attributes
+
+        """
+        if n < 1:
+            return []
+        Xy.iloc[:, -1] = Xy.iloc[:, -1].astype(int)  # make labels an int to add and subtract with them
+        a = IGClassifier.get_max_IG_attr(Xy)
+        return IGClassifier.get_n_best_IG_attributes(n - 1, Xy.drop(a, axis=1)) + [a]
+
+
+
+    @staticmethod
     def get_max_IG_attr(Xy):
         """
         get attribute with best IG from Xy
         :param Xy:
         :return:
         """
-        best_col = 0  # bug prone!!! todo - some key error is happening becuase this was bestcol = 1
+        best_col = 0
         max_IG = 0
         for col in Xy.columns[:-1]:  # for each col
             cur_IG = IGClassifier.calc_IG(col, Xy)

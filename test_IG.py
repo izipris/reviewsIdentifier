@@ -48,7 +48,8 @@ def main():
     y = model[0][1]
     Xy = pd.concat([pd.DataFrame(X), pd.DataFrame(y)], axis=1, ignore_index=True)
 
-    train_Xy = Xy.sample(frac=0.5).reset_index(drop=True)  # random_state = 0
+
+    train_Xy = Xy.sample(frac=0.8).reset_index(drop=True)  # random_state = 0
     test_Xy = Xy.drop(train_Xy.index).reset_index(drop=True)
     test_set = test_Xy.iloc[:, :-1]  # test set, no labels
     true_y = test_Xy.iloc[:, -1].tolist()  # true labels of test set
@@ -59,12 +60,16 @@ def main():
     words_matrix = train_Xy
     print(words_matrix)
 
+    #best_atts = IGClassifier.get_n_best_IG_attributes(30, Xy)
+    #print('best attributes are: ', best_atts)
+
     # plot train error as function of max depth todo- plot 3d function as function of traininfraction also!!
     # than plot as function of data set size
-    n = 10
+    n = 30
     errors = []
-    for i in range(1, n):
-        ig_tree = IGClassifier(words_matrix, training_fraction=1/n)
+    pruned_errors = []
+    for i in range(1, n, 3):
+        ig_tree = IGClassifier(words_matrix, max_depth=i, training_fraction=0.2)
         print('start time: ', datetime.datetime.now())
         ig_tree.train()
         print('end time: ', datetime.datetime.now())
@@ -72,6 +77,7 @@ def main():
         label = ig_tree.predict(test_set)
         # calc error
         e = calc_error(label, true_y)
+        errors.append(e)
         print('error before prune is: ', e)
         ig_tree.root.display()
         print('------now going to prune-------')
@@ -81,7 +87,7 @@ def main():
         label = ig_tree.predict(test_set)
         e = calc_error(label, true_y)
         print('error rate after prune is: ', e)
-        errors.append(e)
+        pruned_errors.append(e)
         ig_tree.root.display()
         print(IGClassifier.get_attributes_from_tree(ig_tree.root))
 
@@ -89,15 +95,17 @@ def main():
 
 
     # x axis values
-    x = list(range(1, 10))
-    x = list(map(lambda x: x/10, x))
+    x = list(range(1, n, 3))
     # corresponding y axis values
     y = errors
+    y2 = pruned_errors
     # plotting the points
     plt.plot(x, y)
-    plt.xlabel('learning Fraction from test set, Rest is used for Pruning')
-    plt.ylabel('True Error Rate')
-    plt.title('750 total sample data set, 730 features \n Training Set fraction: 0.5')
+    plt.plot(x, y2)
+    plt.xlabel('max depth')
+    plt.ylabel('Test Error Rate')
+    plt.legend(['y = Pre Prune', 'y = Post Prune'], loc='upper left')
+    plt.title('750 total sample data set, 730 features \n Training Set fraction: 0.8 \n 80% of that used for holdout data')
 
     # function to show the plot
     plt.show()
