@@ -3,8 +3,8 @@ import numpy as np
 from scipy.stats import norm
 
 PI = math.pi
-
 NO_STD = 1/math.sqrt(2*PI)
+TRAIN_RATIO = 0.70
 
 
 # probability for single instance
@@ -20,7 +20,64 @@ def get_all_probs(data, dist):
 
 
 class Classifier:
-    def __init__(self, Xy):
+    def __init__(self, Xy, attributes=None, prune=False):
+        self.stats = None
+        self.attributes = np.array(attributes)
+        if attributes is None and not prune:
+            self.build(Xy)
+        else:
+            if not prune:
+                Xy = Xy[:, np.concatenate((attributes, [-1]))]
+                self.build(Xy)
+            else:
+                self.prune_train(Xy, attributes)
+
+    def prune_train(self, Xy, attributes):
+        # naive prune - keep adding attributes in ascending order till it
+        # stops improving classifier
+        if attributes is None:  # then check all attributes
+            attributes = np.array(range(Xy.shape[1] - 1)).astype(np.int)
+        full_size = Xy.shape[0]
+        idx = np.random.randint(full_size, size=int(full_size * TRAIN_RATIO))
+        training_set = Xy[idx, :]
+        test_set = np.delete(Xy, idx, axis=0)
+        # training_set = Xy
+        # test_set = Xy
+        attr_errors = dict()
+        for i in attributes:
+            bayes = Classifier(training_set, [i])
+            error = bayes.error(test_set[:, :-1], test_set[:, -1])
+            attr_errors[i] = error
+            # if i%100 == 0:
+            #     print(i, " error is: ", error)
+        # get random again
+        # idx = np.random.randint(full_size, size=int(full_size * TRAIN_RATIO))
+        # training_set = Xy[idx, :]
+        # test_set = np.delete(Xy, idx, axis=0)
+        best_attr = min(attr_errors, key=attr_errors.get)  # get best attr
+        best_attributes = [best_attr]  # remember it
+        bayes = Classifier(training_set, [best_attr])  # remember min error
+        min_error = bayes.error(test_set[:, :-1], test_set[:, -1])
+        for i in attributes:
+            if i not in best_attributes:  # for all that havent been checked
+                # # get random
+                # idx = np.random.randint(full_size, size=int(full_size * TRAIN_RATIO))
+                # training_set = Xy[idx, :]
+                # test_set = np.delete(Xy, idx, axis=0)
+                # get bayes classifier
+                bayes = Classifier(training_set, np.concatenate((
+                    best_attributes, [i])))
+                error = bayes.error(test_set[:, :-1], test_set[:, -1])
+                # print(best_attributes, i, " error is: ", error)
+                if error < min_error:
+                    # print("added ", i, "training-test error: ", error)
+                    best_attributes.append(i)  # add i to best attributes
+                    min_error = error  # remember new min
+        Xy = Xy[:, np.concatenate((best_attributes, [-1]))]
+        self.attributes = best_attributes
+        self.build(Xy)
+
+    def build(self, Xy):
         # separate instances by label
         zeros_inst = Xy[np.where(Xy[:, -1] == 0)][:, 0:-1]
         ones_inst = Xy[np.where(Xy[:, -1] == 1)][:, 0:-1]
@@ -41,7 +98,6 @@ class Classifier:
         one_stats = np.concatenate(([ones_mean], [ones_std])).transpose()
         # make library
         self.stats = (zero_stats, one_stats)
-        # print(self.stats)  # todo remove
 
     def predict(self, data):
         # get probabilities for each label, return label with better prob
@@ -49,12 +105,14 @@ class Classifier:
         data = np.array(data)
         if data.size == 0:
             return 0.5  # as in random
+        if self.attributes is not None:  # if have list of relevant
+            # attributes
+            data = data[:, self.attributes]
         zero_probabilities = get_all_probs(data, self.stats[0])
         # zero_probabilities[np.isnan(zero_probabilities)] = 0
         one_probabilities = get_all_probs(data, self.stats[1])
         # one_probabilities[np.isnan(one_probabilities)] = 0
         prediction = np.argmax([zero_probabilities, one_probabilities], axis=0)
-        # print('prediction: ', prediction)  # todo remove
         return prediction
 
     def error(self, data, labels):
@@ -126,3 +184,13 @@ class Classifier:
 # def concat_and_prob(data, dist):
 #     concat = np.concatenate((dist, np.array([data]).T), axis=1)
 #     return np.apply_along_axis(get_prob, 1, concat)
+
+
+# # -----retrieve some columns test
+# a = np.array([[1, 2, 3],
+#               [4, 5, 6],
+#               [7, 8, 9],
+#               [10, 11, 12]])
+# b = [1, -1]
+# print(a[:, b])
+

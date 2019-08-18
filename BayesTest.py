@@ -5,6 +5,12 @@ import datetime
 from learning import adaboost
 from learning import Bayes
 
+BEST_ATTR = np.array([413, 88, 467, 855, 59, 524, 789, 320, 123, 631, 109,
+                      245, 75, 223, 537, 332, 47, 649, 501, 455, 49, 18,
+                      570]).astype(np.int)
+
+ERROR = 0.22794117647058823
+
 
 def get_model():
     print("Started work on model: " + str(datetime.datetime.now()))
@@ -38,8 +44,11 @@ else:
     training_set = np.load('training.npy')
     test_set = np.load('test.npy')
 
+training_set = training_set.astype(np.float)
+test_set = test_set.astype(np.float)
+
 # ----big test bayes
-bayes = Bayes.Classifier(training_set)
+bayes = Bayes.Classifier(training_set, prune=True)
 # test model
 print("error: ", bayes.error(test_set[:, 0:-1], test_set[:, -1]))
 
@@ -64,5 +73,3 @@ print("error: ", bayes.error(test_set[:, 0:-1], test_set[:, -1]))
 #     boost.train(training_set[:, 0:-1], training_set[:, -1])
 #     print("error for ", t, ": ", boost.error(test_set[:, 0:-1], test_set[:,
 #         -1]))
-
-
