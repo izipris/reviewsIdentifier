@@ -328,8 +328,8 @@ class IGClassifier:
             print('at col: ', col)
             cur_IG = IGClassifier.calc_IG(col, Xy)
             res.append((cur_IG, col))
-
-        return nlargest(n ,res)
+        largest = nlargest(n ,res)
+        return [x[1] for x in largest]
 
 
     @staticmethod
