@@ -51,20 +51,20 @@ def get_model(new, filename):
 def main():
 
     run_check = True  # check at end on our own input
-    load_prev = False  # use saved preprocessed attribute list
+    load_prev = True  # use saved preprocessed attribute list
     prune = False
-    test_fraction = 0.25
+    test_fraction = 0.5
 
     # the new version
     model = get_model(new=True, filename='COMMENTS_PARTIAL.txt')
     Xy = pd.DataFrame(model[0])
-    Xy[Xy != 0] = 1  #   -------is this the fix??
+    Xy[Xy != 0] = 1  # make sure matrix is binary
 
     print('full matrix including test set is: ')
     print(Xy)
 
     # split to train and test data
-    train_Xy = Xy.sample(frac=1-test_fraction, random_state=100).reset_index(drop=True)  # random_state = 0
+    train_Xy = Xy.sample(frac=1-test_fraction, random_state=180).reset_index(drop=True)  # random_state = 0
 
     # select features with best information gain
     k = 1000  # num of attributes that are best
@@ -76,40 +76,48 @@ def main():
     else:
         best_atts = list(map(lambda x: int(x), load_attributes('features.txt')))
 
-    # use feature selection, select only best attibutes columns
-    cols = best_atts + [-1]
-    words_matrix = train_Xy.iloc[:, cols]  # feature selection
-    words_matrix.columns = range(words_matrix.shape[1])  # renames cols
-
-    # strip irrelevent cols from test set
-    test_Xy = Xy.drop(train_Xy.index).reset_index(drop=True).iloc[:, cols]
-    test_Xy.columns = range(test_Xy.shape[1])
-
-    print('words matrix is')
-    print(words_matrix)
-    print('test set is:')
-    print(test_Xy)
-
-    # split test set for later with and without label
-    test_set = test_Xy.iloc[:, :-1]  # test set, no labels
-    true_y = test_Xy.iloc[:, -1].tolist()  # true labels of test set
 
     # plot train error as function num of selected features  out of k best
     # than plot as function of data set size
     errors = []
     pruned_errors = []
-    for i in range(1, k, 50):
+    for i in range(100, 400, 100):
+
+        cur_best_atts = best_atts[:i]
+        print('using ', len(cur_best_atts), 'attributes:' ,cur_best_atts)
+        # use feature selection, select only best attibutes columns
+        cols = cur_best_atts + [-1]
+        words_matrix = train_Xy.iloc[:, cols]  # feature selection
+        words_matrix.columns = range(words_matrix.shape[1])  # renames cols
+
+        # strip irrelevent cols from test set
+        test_Xy = Xy.drop(train_Xy.index).reset_index(drop=True).iloc[:, cols]
+        test_Xy.columns = range(test_Xy.shape[1])
+
+        #if i == 1:
+        print('words matrix is')
+        print(words_matrix)
+        print('test set is:')
+        print(test_Xy)
+
+        # split test set for later with and without label
+        test_set = test_Xy.iloc[:, :-1]  # test set, no labels
+        true_y = test_Xy.iloc[:, -1].tolist()  # true labels of test set
+
+
+
         ig_tree = IGClassifier(words_matrix, training_fraction=1)  # no pruning this time
         print('start time: ', datetime.datetime.now())
-        ig_tree.train()
+        ig_tree.build()
         print('end time: ', datetime.datetime.now())
 
         label = ig_tree.predict(test_set)
         # calc error
         e = calc_error(label, true_y)
         errors.append(e)
-        print('error before prune is: ', e)
         ig_tree.root.display()
+        print('error is: ', e, 'i is: ', i)
+
 
         if prune:
             print('------now going to prune-------')
@@ -120,11 +128,9 @@ def main():
             pruned_errors.append(e)
             ig_tree.root.display()
 
-    # importing the required module
-
 
     # x axis values
-    x = list(range(1, k, 50))
+    x = list(range(100, 400, 100))
     # corresponding y axis values
     y = errors
     y2 = pruned_errors

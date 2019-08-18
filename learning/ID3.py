@@ -102,7 +102,7 @@ class IGClassifier:
         self.test_set = test_Xy.iloc[:, :-1]  # hold out set no labels
         self.true_y = test_Xy.iloc[:, -1].tolist()  # true labels of holdout set
 
-    def train(self):
+    def build(self):
         """
         train method for classifier
         :return:
