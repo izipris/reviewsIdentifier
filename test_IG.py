@@ -1,5 +1,3 @@
-import pickle
-
 from utilities.DataUtils import DataUtils
 import numpy as np
 import pandas as pd
@@ -14,10 +12,12 @@ def save_attributes(outfile, attributes):
         for s in attributes:
             f.write(str(s) + '\n')
 
+
 def load_attributes(infile):
     with open(infile, encoding="utf8", errors='ignore') as f:
         my_list = [line.rstrip('\n') for line in f]
     return my_list
+
 
 def calc_error(pred_label, true_y):
     error = 0
@@ -50,29 +50,38 @@ def get_model(new, filename):
 
 def main():
 
+    run_check = True  # check at end on our own input
+    load_prev = False  # use saved preprocessed attribute list
+    prune = False
+    test_fraction = 0.25
+
     # the new version
     model = get_model(new=True, filename='COMMENTS_PARTIAL.txt')
     Xy = pd.DataFrame(model[0])
-    Xy[Xy != 0] = 1  #   -------is thus the fix??
+    Xy[Xy != 0] = 1  #   -------is this the fix??
 
     print('full matrix including test set is: ')
     print(Xy)
 
-    train_Xy = Xy.sample(frac=0.75, random_state=100).reset_index(drop=True)  # random_state = 0  # take half for train
+    # split to train and test data
+    train_Xy = Xy.sample(frac=1-test_fraction, random_state=100).reset_index(drop=True)  # random_state = 0
 
+    # select features with best information gain
     k = 1000  # num of attributes that are best
-    best_atts = IGClassifier.get_n_best_attributes_fast(k, Xy.iloc[:, :-1])  # select k best columns no lablel col
-    print('best attributes are: ', best_atts)
-    save_attributes('features.txt', best_atts)
+    if not load_prev:
+        best_atts = IGClassifier.get_n_best_attributes_fast(k, Xy.iloc[:, :-1])  # select k best columns no lablel col
+        print('best attributes are: ', best_atts)
+        save_attributes('features.txt', best_atts)
 
-    #best_atts = list(map(lambda x: int(x), load_attributes('features.txt')))
-    #print(best_atts)
-    exit(0)
+    else:
+        best_atts = list(map(lambda x: int(x), load_attributes('features.txt')))
 
+    # use feature selection, select only best attibutes columns
     cols = best_atts + [-1]
     words_matrix = train_Xy.iloc[:, cols]  # feature selection
     words_matrix.columns = range(words_matrix.shape[1])  # renames cols
 
+    # strip irrelevent cols from test set
     test_Xy = Xy.drop(train_Xy.index).reset_index(drop=True).iloc[:, cols]
     test_Xy.columns = range(test_Xy.shape[1])
 
@@ -81,17 +90,16 @@ def main():
     print('test set is:')
     print(test_Xy)
 
-    #create test set for later
+    # split test set for later with and without label
     test_set = test_Xy.iloc[:, :-1]  # test set, no labels
     true_y = test_Xy.iloc[:, -1].tolist()  # true labels of test set
 
-    # plot train error as function of max depth todo- plot 3d function as function of traininfraction also!!
+    # plot train error as function num of selected features  out of k best
     # than plot as function of data set size
-    n = 50
     errors = []
     pruned_errors = []
-    for i in range(1, n, 4):
-        ig_tree = IGClassifier(words_matrix, max_depth=i, training_fraction=0.25)
+    for i in range(1, k, 50):
+        ig_tree = IGClassifier(words_matrix, training_fraction=1)  # no pruning this time
         print('start time: ', datetime.datetime.now())
         ig_tree.train()
         print('end time: ', datetime.datetime.now())
@@ -102,39 +110,38 @@ def main():
         errors.append(e)
         print('error before prune is: ', e)
         ig_tree.root.display()
-        print('------now going to prune-------')
 
-        ig_tree.prune()
-
-        label = ig_tree.predict(test_set)
-        e = calc_error(label, true_y)
-        print('error rate after prune is: ', e)
-        pruned_errors.append(e)
-        ig_tree.root.display()
-        print(IGClassifier.get_attributes_from_tree(ig_tree.root))
+        if prune:
+            print('------now going to prune-------')
+            ig_tree.prune()
+            label = ig_tree.predict(test_set)
+            e = calc_error(label, true_y)
+            print('error rate after prune is: ', e)
+            pruned_errors.append(e)
+            ig_tree.root.display()
 
     # importing the required module
 
 
     # x axis values
-    x = list(range(1, n, 4))
+    x = list(range(1, k, 50))
     # corresponding y axis values
     y = errors
     y2 = pruned_errors
     # plotting the points
     plt.plot(x, y)
-    plt.plot(x, y2)
-    plt.xlabel('max depth')
+
+    plt.xlabel('Num of Selected Features for Tree Build')
     plt.ylabel('Test Error Rate')
-    plt.legend(['y = Pre Prune', 'y = Post Prune'], loc='upper left')
-    plt.title('10,000 total sample data set, 1000 features selected \n Training Set fraction: 0.75 \n 75% of that used for holdout data for pruning')
+    if prune:
+        plt.plot(x, y2)
+        plt.legend(['y = Pre Prune', 'y = Post Prune'], loc='upper left')
+    plt.title('10,000 total sample data set, 6500 features Generated \n Training Set fraction: 0.75 \n no Pruning')
 
     # function to show the plot
     plt.show()
 
-
     # run input check at end
-    run_check = True
     if run_check:
         while True:
             s = input("Type a review about a cellphone: ")
@@ -146,18 +153,11 @@ def main():
                 if a[i] == 1:
                     print(i, ' ', end='')
             print()
-
-
             print("Prediction (1-Positive, 0-Negative): " + str(ig_tree.predict(df)))
+
 
 if __name__ == "__main__":
     main()
-
-
-
-
-    ##### 'phone' has like 360 bad apperances as 120 good appearnces in comments 3.5k ###### todo- for if i want to test with ratio
-
 
 
     # old version
