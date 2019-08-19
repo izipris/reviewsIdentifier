@@ -96,7 +96,7 @@ class IGClassifier:
         self.root = None  # root of IG tree
         self.max_depth = max_depth
 
-        train = Xy.sample(frac=training_fraction, random_state=911).reset_index(drop=True)  # randaom_state=200
+        train = Xy.sample(frac=training_fraction, random_state=912).reset_index(drop=True)  # randaom_state=200
         self.Xy = train  # training set
 
         test_Xy = Xy.drop(train.index).reset_index(drop=True)

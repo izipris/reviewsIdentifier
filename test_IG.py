@@ -52,7 +52,7 @@ def main():
 
     run_check = True  # check at end on our own input
     load_prev = True  # use saved preprocessed attribute list
-    prune = False
+    prune = True
     test_fraction = 0.5
 
     # the new version
@@ -64,7 +64,7 @@ def main():
     print(Xy)
 
     # split to train and test data
-    train_Xy = Xy.sample(frac=1-test_fraction, random_state=183).reset_index(drop=True)  # random_state = 0
+    train_Xy = Xy.sample(frac=1-test_fraction, random_state=188).reset_index(drop=True)  # random_state = 0
 
     # select features with best information gain
     k = 1000  # num of attributes that are best
@@ -81,7 +81,7 @@ def main():
     # than plot as function of data set size
     errors = []
     pruned_errors = []
-    for i in range(200, 400, 100):
+    for i in range(50, 200, 50):
 
         cur_best_atts = best_atts[:i]
         print('using ', len(cur_best_atts), 'attributes:' ,cur_best_atts)
@@ -106,7 +106,7 @@ def main():
 
 
 
-        ig_tree = IGClassifier(words_matrix, training_fraction=1)  # no pruning this time
+        ig_tree = IGClassifier(words_matrix, max_depth=15, training_fraction=0.1)  # no pruning this time
         print('start time: ', datetime.datetime.now())
         ig_tree.build()
         print('end time: ', datetime.datetime.now())
@@ -130,7 +130,7 @@ def main():
 
 
     # x axis values
-    x = list(range(200, 400, 100))
+    x = list(range(50, 200, 50))
     # corresponding y axis values
     y = errors
     y2 = pruned_errors
@@ -142,7 +142,7 @@ def main():
     if prune:
         plt.plot(x, y2)
         plt.legend(['y = Pre Prune', 'y = Post Prune'], loc='upper left')
-    plt.title('10,000 total sample data set, 6500 features Generated \n Training Set fraction: 0.5 \n no Pruning')
+    plt.title('10,000 total sample data set, 6500 features Generated \n Training Set fraction: 0.5, 0.1 used for learning rest for prune')
 
     # function to show the plot
     plt.show()
