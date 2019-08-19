@@ -20,8 +20,9 @@ class IGNode:
 
     def display(self):
         lines, _, _, _ = self._display_aux()
-        for line in lines:
-            print(line)
+        with open('tree_visualize.txt', 'w') as f:
+            for line in lines:
+                f.write(line + '\n')
 
     def _display_aux(self):
         """Returns list of strings, width, height, and horizontal coordinate of the root."""
@@ -95,14 +96,14 @@ class IGClassifier:
         self.root = None  # root of IG tree
         self.max_depth = max_depth
 
-        train = Xy.sample(frac=training_fraction, random_state=901).reset_index(drop=True)  # randaom_state=200
+        train = Xy.sample(frac=training_fraction, random_state=912).reset_index(drop=True)  # randaom_state=200
         self.Xy = train  # training set
 
         test_Xy = Xy.drop(train.index).reset_index(drop=True)
         self.test_set = test_Xy.iloc[:, :-1]  # hold out set no labels
         self.true_y = test_Xy.iloc[:, -1].tolist()  # true labels of holdout set
 
-    def train(self):
+    def build(self):
         """
         train method for classifier
         :return:
@@ -119,6 +120,8 @@ class IGClassifier:
         """
         if x is None:
             x = self.test_set
+        else:
+            x = pd.DataFrame(x)  # now accepts numpy array too, todo- test
 
         if len(x) == 0:
             raise Exception('cannot predict on empty data set')
@@ -131,7 +134,7 @@ class IGClassifier:
         for i, row in x.iterrows():
             cur = self.root
             while cur.label is None:  # traverse tree by where it points me, until we reach our leaf
-                if x.iloc[i, cur.attribute] == 1:
+                if x.loc[x.index[i], cur.attribute] == 1: #x.iloc[i, cur.attribute] == 1:
                     cur = cur.one
                 else:
                     cur = cur.zero
