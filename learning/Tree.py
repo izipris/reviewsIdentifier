@@ -69,18 +69,18 @@ class Tree:
                 return None
         node = Node(self.__features_mapping[feature_with_min_gini], np.min(np.take(gini_of_features, features_indices)))
         next_feature_indices = [x for x in features_indices if x != feature_with_min_gini]
-        data_feature_yes = data[data[:, feature_with_min_gini] == 1]
+        data_feature_yes = data[data[:, feature_with_min_gini] > 0]
         data_feature_no = data[data[:, feature_with_min_gini] == 0]
         node.set_left_child(self.generate_node(next_feature_indices, data_feature_yes, node))
         node.set_right_child(self.generate_node(next_feature_indices, data_feature_no, node))
         if node.get_left_child() is None:
-            if np.ma.size(data_feature_yes[data_feature_yes[:, -1] == 1], axis=0) >= np.ma.size(
+            if np.ma.size(data_feature_yes[data_feature_yes[:, -1] > 0], axis=0) >= np.ma.size(
                     data_feature_yes[data_feature_yes[:, -1] == 0], axis=0):
                 node.set_left_child(Node(True, -1))
             else:
                 node.set_left_child(Node(False, -1))
         if node.get_right_child() is None:
-            if np.ma.size(data_feature_no[data_feature_no[:, -1] == 1], axis=0) >= np.ma.size(
+            if np.ma.size(data_feature_no[data_feature_no[:, -1] > 0], axis=0) >= np.ma.size(
                     data_feature_no[data_feature_no[:, -1] == 0], axis=0):
                 node.set_right_child(Node(True, -1))
             else:

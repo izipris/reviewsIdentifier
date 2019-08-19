@@ -3,23 +3,19 @@ from utilities.contractions import contractions_dict
 from string import punctuation
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
-import pytypo
+
 stopword = stopwords.words('english')
 
 
 class LanguageUtils:
     """see https://medium.com/@pemagrg/pre-processing-text-in-python-ad13ea544dae"""
+
     @staticmethod
     def to_lower(text):
         """
         Converting text to lower case
         """
         return text.lower()
-
-    @staticmethod
-    def spelling_correction(text):
-        """basic spelling correction"""
-        return pytypo.correct_sentence(text)
 
     @staticmethod
     def remove_contractions(text):
@@ -54,4 +50,3 @@ class LanguageUtils:
         word_tokens = nltk.word_tokenize(text)
         lemmatized_word = [wordnet_lemmatizer.lemmatize(word) for word in word_tokens]
         return ' '.join(lemmatized_word)
-

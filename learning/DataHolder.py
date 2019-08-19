@@ -61,7 +61,6 @@ class DataHolder:
         X = self.__vectorizer.fit_transform(self.__sk_reviews_vector)
         self.__reviews_words_matrix = np.array(X.toarray())
 
-
     def get_reviews_words_matrix(self):
         """Returns the matrix of the reviews represented by the words vector"""
         return self.__reviews_words_matrix
@@ -75,3 +74,7 @@ class DataHolder:
 
     def get_vectorizer(self):
         return self.__vectorizer
+
+    def get_Xy_matrix(self):
+        Xy = np.append(self.get_reviews_words_matrix(), self.get_tagging_vector().reshape(-1, 1), axis=1)
+        return Xy
