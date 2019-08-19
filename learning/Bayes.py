@@ -20,61 +20,61 @@ def get_all_probs(data, dist):
 
 
 class Classifier:
-    def __init__(self, Xy, attributes=None, prune=False):
+    def __init__(self, Xy, attributes=None, prune=False, short_prune=False,
+                 prune_err_thresh=0.495, prune_attr_thresh=100):
         self.stats = None
-        self.attributes = np.array(attributes)
-        if attributes is None and not prune:
-            self.build(Xy)
-        else:
-            if not prune:
-                Xy = Xy[:, np.concatenate((attributes, [-1]))]
-                self.build(Xy)
-            else:
-                self.prune_train(Xy, attributes)
+        self.attributes = None
+        self.short_prune = short_prune
+        self.prune_err_thresh = prune_err_thresh
+        self.prune_attr_thresh = prune_attr_thresh
+        self.build(Xy)  # get all stats
+        if attributes is not None:
+            self.attributes = np.array(attributes)
+        if prune:
+            self.prune_train(Xy, attributes)
 
     def prune_train(self, Xy, attributes):
         # naive prune - keep adding attributes in ascending order till it
         # stops improving classifier
         if attributes is None:  # then check all attributes
             attributes = np.array(range(Xy.shape[1] - 1)).astype(np.int)
-        full_size = Xy.shape[0]
-        idx = np.random.randint(full_size, size=int(full_size * TRAIN_RATIO))
-        training_set = Xy[idx, :]
-        test_set = np.delete(Xy, idx, axis=0)
-        # training_set = Xy
-        # test_set = Xy
-        attr_errors = dict()
-        for i in attributes:
-            bayes = Classifier(training_set, [i])
-            error = bayes.error(test_set[:, :-1], test_set[:, -1])
-            attr_errors[i] = error
-            # if i%100 == 0:
-            #     print(i, " error is: ", error)
-        # get random again
-        idx = np.random.randint(full_size, size=int(full_size * TRAIN_RATIO))
-        training_set = Xy[idx, :]
-        test_set = np.delete(Xy, idx, axis=0)
-        best_attr = min(attr_errors, key=attr_errors.get)  # get best attr
+        attr_errors = dict()  # remember each attr's lone-error
+        # shorten pruning for very large data?
+        if self.short_prune:
+            np.random.shuffle(attributes)
+            good_enough = 0
+            for i in attributes:
+                error = self.error(Xy[:, :-1], Xy[:, -1], [i])
+                attr_errors[i] = error
+                if error < self.prune_err_thresh:
+                    good_enough += 1
+                    # print(i, "good enough:", good_enough, ", with error: ",
+                    #       error)
+                    if good_enough >= self.prune_attr_thresh:
+                        break
+        else:
+            for i in attributes:
+                error = self.error(Xy[:, :-1], Xy[:, -1], [i])
+                attr_errors[i] = error
+                # if i%100 == 0:
+                #     print(i, " error is: ", error)
+        # sort attributes by error
+        sorted_dict = sorted(attr_errors.items(), key=lambda x: x[1])
+        # get best attr
+        best = sorted_dict.pop(0)
+        best_attr, min_error = best[0], best[1]
         best_attributes = [best_attr]  # remember it
-        bayes = Classifier(training_set, [best_attr])  # remember min error
-        min_error = bayes.error(test_set[:, :-1], test_set[:, -1])
-        for i in attributes:
-            if i not in best_attributes:  # for all that havent been checked
-                # # get random
-                # idx = np.random.randint(full_size, size=int(full_size * TRAIN_RATIO))
-                # training_set = Xy[idx, :]
-                # test_set = np.delete(Xy, idx, axis=0)
-                # get bayes classifier
-                bayes = Classifier(training_set, np.concatenate((
-                    best_attributes, [i])))
-                error = bayes.error(test_set[:, :-1], test_set[:, -1])
-                if error < min_error:
-                    # print("added ", i, "training-test error: ", error)
-                    best_attributes.append(i)  # add i to best attributes
-                    min_error = error  # remember new min
-        Xy = Xy[:, np.concatenate((best_attributes, [-1]))]
-        self.attributes = best_attributes
-        self.build(Xy)
+        while sorted_dict:  # while there are more attributes
+            best = sorted_dict.pop(0)  # get best
+            best_attr = best[0]
+            # check it's combined error with chosen best-attributes
+            error = self.error(Xy[:, :-1], Xy[:, -1],
+                               np.concatenate((best_attributes, [best_attr])))
+            if error < min_error:  # if it helps - keep it
+                min_error = error
+                print('added ', best_attr, "error: ", error)
+                best_attributes.append(best_attr)
+        self.attributes = np.array(best_attributes)
 
     def build(self, Xy):
         # separate instances by label
@@ -98,98 +98,31 @@ class Classifier:
         # make library
         self.stats = (zero_stats, one_stats)
 
-    def predict(self, data):
+    def predict(self, data, attributes=None):
         # get probabilities for each label, return label with better prob
         # for each instance
         data = np.array(data)
         if data.size == 0:
             return 0.5  # as in random
-        if self.attributes is not None:  # if have list of relevant
-            # attributes
+        zero_stats = self.stats[0]
+        one_stats = self.stats[1]
+        if self.attributes is not None:  # if have list of relevant attributes
             data = data[:, self.attributes]
-        zero_probabilities = get_all_probs(data, self.stats[0])
-        # zero_probabilities[np.isnan(zero_probabilities)] = 0
-        one_probabilities = get_all_probs(data, self.stats[1])
-        # one_probabilities[np.isnan(one_probabilities)] = 0
+            zero_stats = zero_stats[self.attributes]
+            one_stats = one_stats[self.attributes]
+        if attributes is not None:  # if given specific attributes to focus on
+            data = data[:, attributes]
+            zero_stats = zero_stats[attributes]
+            one_stats = one_stats[attributes]
+        zero_probabilities = get_all_probs(data, zero_stats)
+        one_probabilities = get_all_probs(data, one_stats)
         prediction = np.argmax([zero_probabilities, one_probabilities], axis=0)
         return prediction
 
-    def error(self, data, labels):
+    def error(self, data, labels, attributes=None):
         data = np.array(data)
         if data.ndim <= 1:
-            return int(self.predict(data) != labels)
-        error = np.sum(labels != self.predict(data)) / float(len(labels))
+            return int(self.predict(data, attributes) != labels)
+        error = np.sum(labels != self.predict(data, attributes)) / float(
+            len(labels))
         return error
-
-
-# --------------concat test
-# a = np.array([[1, 2],
-#               [3, 4],
-#               [5, 6],
-#               [7, 8]])
-# b = np.array([9, 10, 11, 12])
-# print(np.concatenate((a, np.array([b]).T), axis=1))
-
-# -------------apply along axis test
-# def my_test(data):
-#     print(scpy.norm(data[0], data[1]).pdf(data[2]))
-#
-#
-# a = np.array([[73, 6.2, 71.5],
-#               [1, 0.5, 1.1],
-#               [20, 5, 1.1]])
-# np.apply_along_axis(my_test, 1, a)
-
-# -------------replace nan with 0 or 1 test
-# a = np.array([1, 0, np.nan, 5, np.nan])
-# print('reg: ', a)
-# print('zeros: ', np.nan_to_num(a))
-# a[np.isnan(a)] = 1
-# print('ones: ', a)
-
-
-# # -------------probs and predict test
-# data = np.array([[1, 1, 1, 0], [0, 0.5, 0.5, 1]])
-# dist1 = np.array([[1, 0],
-#                  [0.5, 0.5],
-#                  [0.5, 0.5],
-#                  [0, 0]])
-# dist0 = np.array([[0, 0],
-#                  [0.5, 0.5],
-#                  [0.5, 0.5],
-#                  [1, 0]])
-# dist1[np.where(dist1[:, -1] == 0), -1] = NO_STD
-# dist0[np.where(dist0[:, -1] == 0), -1] = NO_STD
-# probs0 = get_all_probs(data, dist0)
-# probs1 = get_all_probs(data, dist1)
-# print('dist1:\n', dist1)
-# print('dist0:\n', dist0)
-# print('probs 1:\n', probs1)
-# print('probs 0:\n', probs0)
-# prediction = np.argmax([probs0, probs1], axis=0)
-# print('prediction is:\n', prediction)
-
-
-###
-
-# # ---------this is garbage
-# # for single attribute
-# def get_prob(data):
-#     prob = norm(data[0], data[1]).pdf(data[2])
-#     return prob
-#
-#
-# # for single instance
-# def concat_and_prob(data, dist):
-#     concat = np.concatenate((dist, np.array([data]).T), axis=1)
-#     return np.apply_along_axis(get_prob, 1, concat)
-
-
-# # -----retrieve some columns test
-# a = np.array([[1, 2, 3],
-#               [4, 5, 6],
-#               [7, 8, 9],
-#               [10, 11, 12]])
-# b = [1, -1]
-# print(a[:, b])
-

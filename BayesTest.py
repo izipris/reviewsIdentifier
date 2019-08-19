@@ -9,12 +9,10 @@ BEST_ATTR = np.array([413, 88, 467, 855, 59, 524, 789, 320, 123, 631, 109,
                       245, 75, 223, 537, 332, 47, 649, 501, 455, 49, 18,
                       570]).astype(np.int)
 
-ERROR = 0.22794117647058823
-
 
 def get_model():
     print("Started work on model: " + str(datetime.datetime.now()))
-    X, y = DataUtils.preprocess_data('COMMENTS_30K_REP.txt')
+    X, y = DataUtils.preprocess_data('COMMENTS_10K_REP.txt')  # choose training
     print("Finished pre-process: " + str(datetime.datetime.now()))
     data_holder = DataHolder(X, y)
     data_holder.reviews_strip()
@@ -47,12 +45,24 @@ else:
 training_set = training_set.astype(np.float)
 test_set = test_set.astype(np.float)
 
-# ----big test bayes
-bayes = Bayes.Classifier(training_set, prune=True)
-# test model
-print("error: ", bayes.error(test_set[:, 0:-1], test_set[:, -1]))
+small_training = np.load('small_training.npy').astype(np.float)
+small_test = np.load('small_test.npy').astype(np.float)
 
-# # ----small test bayes
+# ----small test bayes
+# bayesS = Bayes.Classifier(small_training, prune=True)
+# # test model
+# print("small with prune error: ", bayesS.error(small_test[:, 0:-1],
+#                                              small_test[:, -1]))
+
+# ----big test bayes
+bayesB = Bayes.Classifier(training_set, prune=True, short_prune=True)
+# test model
+print("big with prune error: ", bayesB.error(test_set[:, 0:-1], test_set[:,
+                                                               -1]))
+
+
+
+# # ----tiny test bayes
 # training = np.array([[1, 1, 0, 0, 1], [0, 1, 0, 1, 0], [1, 0, 1, 0, 1],
 #                      [0, 0, 1, 1, 0]])
 # test = np.array([[1, 1, 1, 0, 1], [0, 0, 0, 1, 0]])
@@ -64,12 +74,3 @@ print("error: ", bayes.error(test_set[:, 0:-1], test_set[:, -1]))
 
 ##################
 
-# adaboost
-#
-# for t in [1, 100, 400]:
-#     print("---training ", t, "-boost ----")  #todo
-#     boost = adaboost.AdaBoost(t)
-#     print("created")  #todo
-#     boost.train(training_set[:, 0:-1], training_set[:, -1])
-#     print("error for ", t, ": ", boost.error(test_set[:, 0:-1], test_set[:,
-#         -1]))
