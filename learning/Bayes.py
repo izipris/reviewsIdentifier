@@ -6,7 +6,7 @@ PI = math.pi
 NO_STD = 1/math.sqrt(2*PI)
 TRAIN_RATIO = 0.85
 PRUNE_ERR_RATIO = 0.3
-ENOUGH_DATA = 500
+ENOUGH_DATA = 600
 
 
 # probability for single instance
@@ -16,14 +16,12 @@ def get_inst_prob(data, dist):
 
 # probability for all instances. assumes isn't empty
 def get_all_probs(data, dist):
-    if data.ndim == 1:
-        return get_inst_prob(data, dist)
     return np.apply_along_axis(get_inst_prob, 1, data, dist)
 
 
 class Classifier:
     def __init__(self, Xy, attributes=None, prune=True, short_prune=False,
-                 prune_err_thresh=0.49, prune_attr_thresh=150):
+                 prune_err_thresh=0.49, prune_attr_thresh=200):
         print("Started learning process for Bayes Classifier.")
         self.stats = None
         self.attributes = None

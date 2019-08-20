@@ -11,9 +11,9 @@ How to run?
 3. After initialization, choose which classifier you'd like to use ('F' - Forest, 'I' - ID3, 'N' - Naive Bayes)
 3.i. If you chose 'F', provide also the number of trees in the forest, number of features in a tree, and
     number of samples in a tree.
-3.ii. If you chose 'I', select whether to work offline (training is based on features that we already selected),
-        or online (training contains feature selection, much more time).
-4. Wait until the algorithm is trained.
+3.ii. If you chose 'I', provide the required information for the tree generation. Note: features selection
+        process might take a few hours, and we recommend to test that algorithm on smallTest.txt.
+4. Wait until the algorithm is trained. When done - see the accuracy rate.
 5. Play with the algorithm - type review and get the prediction.
 
 #####
@@ -22,7 +22,7 @@ Files description
 1. Main.py - the main program which runs as described.
 2. COMMENTS_10K_REP.txt - data sample of 10K labeled reviews
 3. COMMENTS_30K_REP.txt - data sample of 30K labeled reviews
-4. COMMENTS_PARTIAL.txt - data sample of 10K labeled reviews
+4. smallTest.txt - data sample of 700 labeled reviews
 5. features.txt - valuable features for offline IG training
 6. Makefile - the makefile of the project
 7. ProjectRunner - sh script for first-time installation

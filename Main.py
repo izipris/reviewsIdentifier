@@ -1,3 +1,4 @@
+import math
 import sys
 import datetime
 import numpy as np
@@ -67,29 +68,25 @@ def run_random_forest_on_data(data_holder_words_matrix, num_of_trees, num_of_fea
     return forest
 
 
-def run_information_gain_on_data(data_holder_words_matrix, offline=True):
+def run_information_gain_on_data(data_holder_words_matrix, k_best_attrubutes, prune_fraction, prune, max_depth, offline=False):
     """Gets a words matrix of DataHolder object, builds a tree with IG on a training set,
     calculates accuracy for a test set, and returns the tree object."""
     TEST_FRACTION = 0.15
-    K_BEST_ATTRIBUTES = 300
 
     Xy = pd.DataFrame(data_holder_words_matrix)
     Xy[Xy != 0] = 1  # make sure matrix is binary
-    train_Xy = Xy.sample(frac=1 - TEST_FRACTION, random_state=188).reset_index(drop=True)  # random_state = 0
-    if not offline:
-        best_atts = IGClassifier.get_n_best_attributes_fast(
-            K_BEST_ATTRIBUTES, Xy.iloc[:, :-1])  # select k best columns no lablel col
-    else:
-        best_atts = list(map(lambda x: int(x), IGClassifier.load_attributes('features.txt')))
-    errors = []
-    pruned_errors = []
+    train_Xy = Xy.sample(frac=1 - TEST_FRACTION).reset_index(drop=True)
+    best_atts = IGClassifier.get_n_best_attributes_fast(k_best_attrubutes, Xy.iloc[:, :-1])  # select k best columns no lablel col
+
     cols = best_atts + [-1]
     words_matrix = train_Xy.iloc[:, cols]  # feature selection
     test_Xy = Xy.drop(train_Xy.index).reset_index(drop=True).iloc[:, cols]
     test_set = test_Xy.iloc[:, :-1]  # test set, no labels
     true_y = test_Xy.iloc[:, -1].tolist()  # true labels of test set
 
-    ig_tree = IGClassifier(words_matrix, max_depth=15, training_fraction=0.1)  # no pruning this time
+    if max_depth < 0:
+        max_depth = math.inf
+    ig_tree = IGClassifier(words_matrix, max_depth=max_depth, training_fraction=1-prune_fraction)
     print("Started to build the IG: " + str(datetime.datetime.now()))
     ig_tree.build()
     print("Finished to build the IG: " + str(datetime.datetime.now()))
@@ -97,14 +94,15 @@ def run_information_gain_on_data(data_holder_words_matrix, offline=True):
     label = ig_tree.predict(test_set)
     # calc error
     e = IGClassifier.calc_error(label, true_y)
-    errors.append(e)
+
     print("IG Accuracy: " + str((1 - float(e))))
-    print("Now pruning...")
-    ig_tree.prune()
-    label = ig_tree.predict(test_set)
-    e = IGClassifier.calc_error(label, true_y)
-    pruned_errors.append(e)
-    print("IG w/ Pruning Accuracy: " + str((1 - float(e))))
+    if prune:
+        print("Now pruning...")
+        ig_tree.prune()
+        label = ig_tree.predict(test_set)
+        e = IGClassifier.calc_error(label, true_y)
+
+        print("IG w/ Pruning Accuracy: " + str((1 - float(e))))
     return ig_tree
 
 
@@ -144,12 +142,16 @@ if __name__ == "__main__":
         num_of_samples = input("Number of samples in a tree: ")
         model = run_random_forest_on_data(words_matrix, int(num_of_trees), int(num_of_features), int(num_of_samples))
     elif input_algorithm == 'I':  # IG
-        train_mode = input("Training Mode (0 - Offline, 1 - Online): ")
-        if train_mode == '1':
-            train_mode = False
-        else:
-            train_mode = True
-        model = run_information_gain_on_data(words_matrix, train_mode)
+        print("total num of features: ", len(words_matrix[0]))
+        num_of_features = int(input("choose how many features you want to train on (must be less than total num of features) "))
+        prune = int(input("would you like to prune at the end? (1 - True, 0 - False) "))
+        prune_fraction = 0
+        if prune:
+            prune_fraction = float(input("choose fraction of hold out data for prune (number: 0 < input < 1) "))
+
+        max_depth = int(input("limit tree to max depth? (-1 not to, any integer to pick max depth) "))
+        model = run_information_gain_on_data(words_matrix, num_of_features, prune_fraction, prune, max_depth)
+
     elif input_algorithm == 'N':  # Naive Bayes
         model = run_bayes_on_data(words_matrix)
     # Let user play
@@ -158,4 +160,7 @@ if __name__ == "__main__":
         if review == 'q':
             exit(0)
         model_prediction = data_holder.get_vectorizer().transform([review]).toarray()
-        print("Prediction (1-Positive, 0-Negative): " + str(model.predict(model_prediction[0])))
+        if input_algorithm == 'I':
+            print("Prediction (1-Positive, 0-Negative): " + str(model.predict(model_prediction)[0]))
+        else:
+            print("Prediction (1-Positive, 0-Negative): " + str(model.predict(model_prediction[0])))
