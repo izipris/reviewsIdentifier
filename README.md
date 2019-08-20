@@ -4,8 +4,8 @@ This is a project of reviews auto-classifying.
 #####
 How to run?
 #####
-1. For first time - just run the makefile
-2. After that, run the Main.py file and give a path of tsv data file as
+1. For first time - just run the makefile, it installs via 'pip3' the relevant packages.
+2. After that, run the Main.py file and give a path of tsv data file in the
    first argument (you can use COMMENTS_10K_REP.txt as an example):
         python3 Main.py COMMENTS_10K_REP.txt
 3. After initialization, choose which classifier you'd like to use ('F' - Forest, 'I' - ID3, 'N' - Naive Bayes)

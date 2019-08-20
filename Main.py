@@ -68,7 +68,8 @@ def run_random_forest_on_data(data_holder_words_matrix, num_of_trees, num_of_fea
     return forest
 
 
-def run_information_gain_on_data(data_holder_words_matrix, k_best_attrubutes, prune_fraction, prune, max_depth, offline=False):
+def run_information_gain_on_data(data_holder_words_matrix, k_best_attrubutes, prune_fraction, prune, max_depth,
+                                 offline=False):
     """Gets a words matrix of DataHolder object, builds a tree with IG on a training set,
     calculates accuracy for a test set, and returns the tree object."""
     TEST_FRACTION = 0.15
@@ -76,7 +77,8 @@ def run_information_gain_on_data(data_holder_words_matrix, k_best_attrubutes, pr
     Xy = pd.DataFrame(data_holder_words_matrix)
     Xy[Xy != 0] = 1  # make sure matrix is binary
     train_Xy = Xy.sample(frac=1 - TEST_FRACTION).reset_index(drop=True)
-    best_atts = IGClassifier.get_n_best_attributes_fast(k_best_attrubutes, Xy.iloc[:, :-1])  # select k best columns no lablel col
+    best_atts = IGClassifier.get_n_best_attributes_fast(k_best_attrubutes,
+                                                        Xy.iloc[:, :-1])  # select k best columns no lablel col
 
     cols = best_atts + [-1]
     words_matrix = train_Xy.iloc[:, cols]  # feature selection
@@ -86,7 +88,7 @@ def run_information_gain_on_data(data_holder_words_matrix, k_best_attrubutes, pr
 
     if max_depth < 0:
         max_depth = math.inf
-    ig_tree = IGClassifier(words_matrix, max_depth=max_depth, training_fraction=1-prune_fraction)
+    ig_tree = IGClassifier(words_matrix, max_depth=max_depth, training_fraction=1 - prune_fraction)
     print("Started to build the IG: " + str(datetime.datetime.now()))
     ig_tree.build()
     print("Finished to build the IG: " + str(datetime.datetime.now()))
@@ -143,7 +145,8 @@ if __name__ == "__main__":
         model = run_random_forest_on_data(words_matrix, int(num_of_trees), int(num_of_features), int(num_of_samples))
     elif input_algorithm == 'I':  # IG
         print("total num of features: ", len(words_matrix[0]))
-        num_of_features = int(input("choose how many features you want to train on (must be less than total num of features) "))
+        num_of_features = int(
+            input("choose how many features you want to train on (must be less than total num of features) "))
         prune = int(input("would you like to prune at the end? (1 - True, 0 - False) "))
         prune_fraction = 0
         if prune:
