@@ -51,15 +51,16 @@ small_test = np.load('small_test.npy').astype(np.float)
 # ----small test bayes
 bayesS = Bayes.Classifier(small_training, prune=True, short_prune=True)
 # test model
+
 print("small with prune error: ", bayesS.error(small_test[:, 0:-1],
                                              small_test[:, -1]))
 
-
-# ----big test bayes
+#
+# # ----big test bayes
 bayesB = Bayes.Classifier(training_set, prune=True, short_prune=True)
 # test model
-print("big with prune error: ", bayesB.error(test_set[:, 0:-1], test_set[:,
-                                                               -1]))
+print("big with prune error: ", bayesB.error(test_set[:, 0:-1],
+                                             test_set[:, -1]))
 
 
 
@@ -74,4 +75,3 @@ print("big with prune error: ", bayesB.error(test_set[:, 0:-1], test_set[:,
 # print('error for single: ', bayes.error(single_test[:-1], single_test[-1]))
 
 ##################
-
