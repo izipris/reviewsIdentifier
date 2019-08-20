@@ -23,15 +23,14 @@ Files description
 2. COMMENTS_10K_REP.txt - data sample of 10K labeled reviews
 3. COMMENTS_30K_REP.txt - data sample of 30K labeled reviews
 4. smallTest.txt - data sample of 700 labeled reviews
-5. features.txt - valuable features for offline IG training
-6. Makefile - the makefile of the project
-7. ProjectRunner - sh script for first-time installation
-8. learning/Bayes.py - A class for the Naive Bayes Classifier
-9. learning/ID3.py - A class for the ID3 Algorithm
-10. learning/Tree.py - A class for a single tree of the forest
-11. learning/Node.py - A class for a single node in the tree of the forest
-12. learning/RandomForest.py - A class for the Random Forest Algorithm
-13. learning/DataHolder.py - A class which responsible for pre-processing of a data file
-14. utilities/contractions.py - Holds contractions
-15. utilities/DataUtils.py - Contains methods for handling with data
-16. utilities/LanguageUtils - Contains methods for handling with language
+5. Makefile - the makefile of the project
+6. ProjectRunner - sh script for first-time installation
+7. learning/Bayes.py - A class for the Naive Bayes Classifier
+8. learning/ID3.py - A class for the ID3 Algorithm
+9. learning/Tree.py - A class for a single tree of the forest
+10. learning/Node.py - A class for a single node in the tree of the forest
+11. learning/RandomForest.py - A class for the Random Forest Algorithm
+12. learning/DataHolder.py - A class which responsible for pre-processing of a data file
+13. utilities/contractions.py - Holds contractions
+14. utilities/DataUtils.py - Contains methods for handling with data
+15. utilities/LanguageUtils - Contains methods for handling with language
