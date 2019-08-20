@@ -38,9 +38,12 @@ class Classifier:
         # stops improving classifier
         if attributes is None:  # then check all attributes
             attributes = np.array(range(Xy.shape[1] - 1)).astype(np.int)
+        total_attr = attributes.size
         attr_errors = dict()  # remember each attr's lone-error
         # shorten pruning for very large data?
         if self.short_prune:
+            print("Started SHORT feature-pruning.")
+            print("Stage 1 of 2:")
             np.random.shuffle(attributes)
             good_enough = 0
             for i in attributes:
@@ -48,23 +51,31 @@ class Classifier:
                 attr_errors[i] = error
                 if error < self.prune_err_thresh:
                     good_enough += 1
-                    # print(i, "good enough:", good_enough, ", with error: ",
-                    #       error)
+                    if good_enough%(self.prune_attr_thresh // 10) == 0:
+                        print("\t", int(100*good_enough /
+                              self.prune_attr_thresh), end="%\n")
                     if good_enough >= self.prune_attr_thresh:
                         break
         else:
-            for i in attributes:
-                error = self.error(Xy[:, :-1], Xy[:, -1], [i])
-                attr_errors[i] = error
-                # if i%100 == 0:
-                #     print(i, " error is: ", error)
+            print("Started FULL feature-pruning.")
+            print("Stage 1 of 2:")
+            for i, att in enumerate(attributes):
+                error = self.error(Xy[:, :-1], Xy[:, -1], [att])
+                attr_errors[att] = error
+                if i%(total_attr/10) == 0:
+                    print("\t", int(100*i//total_attr), end="%\n")
+        print("Stage 2 of 2:")
         # sort attributes by error
         sorted_dict = sorted(attr_errors.items(), key=lambda x: x[1])
-        # get best attr
+        # get best attr and it's error
         best = sorted_dict.pop(0)
         best_attr, min_error = best[0], best[1]
         best_attributes = [best_attr]  # remember it
+        counter, dict_size = 0, len(sorted_dict) + 1
         while sorted_dict:  # while there are more attributes
+            if counter%(dict_size//10) == 0:
+                print("\t", int(100*counter/dict_size), end="%\n")
+            counter += 1
             best = sorted_dict.pop(0)  # get best
             best_attr = best[0]
             # check it's combined error with chosen best-attributes
@@ -72,8 +83,10 @@ class Classifier:
                                np.concatenate((best_attributes, [best_attr])))
             if error < min_error:  # if it helps - keep it
                 min_error = error
-                print('added ', best_attr, "error: ", error)
+                # print('added ', best_attr, "error: ", error)
                 best_attributes.append(best_attr)
+        print("Selected", len(best_attributes), "attributes out of",
+              total_attr, "total.")
         self.attributes = np.array(best_attributes)
 
     def build(self, Xy):
