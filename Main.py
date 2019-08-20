@@ -46,12 +46,12 @@ def get_data_holder(data_file_path):
     return data_holder
 
 
-def run_random_forest_on_data(data_holder_words_matrix):
+def run_random_forest_on_data(data_holder_words_matrix, num_of_trees, num_of_features, num_of_samples):
     """Gets a words matrix of DataHolder object, builds a random forest on a training set,
     calculates accuracy for a test set, and returns the forest object."""
     training_set, test_set = DataUtils.split_to_sets(
         words_matrix, int(np.ma.size(data_holder_words_matrix, axis=0) * TEST_SET_PCTG))
-    forest = RandomForest(1000, training_set.astype(int), 5000, 3000)
+    forest = RandomForest(num_of_trees, training_set.astype(int), num_of_samples, num_of_features)
     print("Started to build the Random Forest: " + str(datetime.datetime.now()))
     forest.build()
     print("Finished to build the Random Forest: " + str(datetime.datetime.now()))
@@ -67,7 +67,7 @@ def run_random_forest_on_data(data_holder_words_matrix):
     return forest
 
 
-def run_information_gain_on_data(data_holder_words_matrix):
+def run_information_gain_on_data(data_holder_words_matrix, offline=True):
     """Gets a words matrix of DataHolder object, builds a tree with IG on a training set,
     calculates accuracy for a test set, and returns the tree object."""
     TEST_FRACTION = 0.15
@@ -76,8 +76,11 @@ def run_information_gain_on_data(data_holder_words_matrix):
     Xy = pd.DataFrame(data_holder_words_matrix)
     Xy[Xy != 0] = 1  # make sure matrix is binary
     train_Xy = Xy.sample(frac=1 - TEST_FRACTION, random_state=188).reset_index(drop=True)  # random_state = 0
-    best_atts = IGClassifier.get_n_best_attributes_fast(
-        K_BEST_ATTRIBUTES, Xy.iloc[:, :-1])  # select k best columns no lablel col
+    if not offline:
+        best_atts = IGClassifier.get_n_best_attributes_fast(
+            K_BEST_ATTRIBUTES, Xy.iloc[:, :-1])  # select k best columns no lablel col
+    else:
+        best_atts = list(map(lambda x: int(x), IGClassifier.load_attributes('features.txt')))
     errors = []
     pruned_errors = []
     cols = best_atts + [-1]
@@ -95,13 +98,13 @@ def run_information_gain_on_data(data_holder_words_matrix):
     # calc error
     e = IGClassifier.calc_error(label, true_y)
     errors.append(e)
-    print("IG Accuracy: " + str(e))
+    print("IG Accuracy: " + str((1 - float(e))))
     print("Now pruning...")
     ig_tree.prune()
     label = ig_tree.predict(test_set)
     e = IGClassifier.calc_error(label, true_y)
     pruned_errors.append(e)
-    print("IG w/ Pruning Accuracy: " + str(e))
+    print("IG w/ Pruning Accuracy: " + str((1 - float(e))))
     return ig_tree
 
 
@@ -116,8 +119,8 @@ def run_bayes_on_data(data_holder_words_matrix):
     bayesB = Bayes.Classifier(training_set, prune=True, short_prune=True)
     print("Finished to build the Random Forest: " + str(datetime.datetime.now()))
     print("Calculating accuracy of the Naive Bayes Classifier...")
-    accuracy = bayesB.error(test_set[:, 0:-1], test_set[:, -1])
-    print("Naive Bayes Classifier Accuracy: " + str(accuracy))
+    e = bayesB.error(test_set[:, 0:-1], test_set[:, -1])
+    print("Naive Bayes Classifier Accuracy: " + str((1 - float(e))))
     return bayesB
 
 
@@ -136,9 +139,17 @@ if __name__ == "__main__":
     # Fit the chosen algorithm
     model = None
     if input_algorithm == 'F':  # Random Forest
-        model = run_random_forest_on_data(words_matrix)
+        num_of_trees = input("Number of trees in the forest: ")
+        num_of_features = input("Max number of features in a tree: ")
+        num_of_samples = input("Number of samples in a tree: ")
+        model = run_random_forest_on_data(words_matrix, int(num_of_trees), int(num_of_features), int(num_of_samples))
     elif input_algorithm == 'I':  # IG
-        model = run_information_gain_on_data(words_matrix)
+        train_mode = input("Training Mode (0 - Offline, 1 - Online): ")
+        if train_mode == '1':
+            train_mode = False
+        else:
+            train_mode = True
+        model = run_information_gain_on_data(words_matrix, train_mode)
     elif input_algorithm == 'N':  # Naive Bayes
         model = run_bayes_on_data(words_matrix)
     # Let user play

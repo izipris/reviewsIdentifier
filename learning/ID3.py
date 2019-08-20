@@ -440,3 +440,9 @@ class IGClassifier:
             if int(pred_label[i]) != int(true_y[i]):
                 error += 1
         return error / len(pred_label)
+
+    @staticmethod
+    def load_attributes(infile):
+        with open(infile, encoding="utf8", errors='ignore') as f:
+            my_list = [line.rstrip('\n') for line in f]
+        return my_list

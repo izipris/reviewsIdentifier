@@ -5,6 +5,8 @@ from scipy.stats import norm
 PI = math.pi
 NO_STD = 1/math.sqrt(2*PI)
 TRAIN_RATIO = 0.85
+PRUNE_ERR_RATIO = 0.3
+ENOUGH_DATA = 500
 
 
 # probability for single instance
@@ -20,8 +22,9 @@ def get_all_probs(data, dist):
 
 
 class Classifier:
-    def __init__(self, Xy, attributes=None, prune=False, short_prune=False,
-                 prune_err_thresh=0.495, prune_attr_thresh=100):
+    def __init__(self, Xy, attributes=None, prune=True, short_prune=False,
+                 prune_err_thresh=0.49, prune_attr_thresh=150):
+        print("Started learning process for Bayes Classifier.")
         self.stats = None
         self.attributes = None
         self.short_prune = short_prune
@@ -38,42 +41,83 @@ class Classifier:
         # stops improving classifier
         if attributes is None:  # then check all attributes
             attributes = np.array(range(Xy.shape[1] - 1)).astype(np.int)
+        total_attr, total_data = attributes.size, Xy.shape[0]
         attr_errors = dict()  # remember each attr's lone-error
         # shorten pruning for very large data?
         if self.short_prune:
-            np.random.shuffle(attributes)
-            good_enough = 0
-            for i in attributes:
-                error = self.error(Xy[:, :-1], Xy[:, -1], [i])
-                attr_errors[i] = error
+            print("Started SHORT feature-pruning.")
+            print("Stage 1 of 2:")
+            np.random.shuffle(attributes)  # random order of features
+            good_enough = 0  # good-enough attributes counter
+            idx = np.random.randint(total_data,
+                                    size=min(int(PRUNE_ERR_RATIO *
+                                                 total_data), ENOUGH_DATA))
+            prune_data = Xy[idx]  # get random chunk of data to prune with
+            for i in attributes:  # for each random attribute
+                error = self.error(prune_data[:, :-1], prune_data[:, -1], [i])
+                attr_errors[i] = error  # remember it's error
                 if error < self.prune_err_thresh:
+                    # keep count of times error is found below threshold
                     good_enough += 1
-                    # print(i, "good enough:", good_enough, ", with error: ",
-                    #       error)
-                    if good_enough >= self.prune_attr_thresh:
+                    if good_enough%(self.prune_attr_thresh // 10) == 0:
+                        print("\t", int((100*good_enough /
+                              self.prune_attr_thresh) + 0.5), end="%\n")
+                    if good_enough >= self.prune_attr_thresh:  # enough found
                         break
+            print("Stage 2 of 2:")
+            # sort attributes by error
+            sorted_dict = sorted(attr_errors.items(), key=lambda x: x[1])
+            # get best attr and it's error
+            best = sorted_dict.pop(0)
+            best_attr, min_error = best[0], best[1]
+            best_attributes = [best_attr]  # remember it
+            counter, dict_size = 0, len(sorted_dict) + 1
+            while sorted_dict:  # while there are more attributes
+                if counter % (dict_size // 10) == 0:
+                    print("\t", int((100 * counter / dict_size) + 0.5),
+                          end="%\n")
+                counter += 1
+                best = sorted_dict.pop(0)  # get best
+                best_attr = best[0]
+                # check it's combined error with chosen best-attributes
+                error = self.error(prune_data[:, :-1], prune_data[:, -1],
+                                   np.concatenate((best_attributes,
+                                                   [best_attr])))
+                if error < min_error:  # if it helps - keep it
+                    min_error = error
+                    # print('added ', best_attr, "error: ", error)
+                    best_attributes.append(best_attr)
         else:
-            for i in attributes:
-                error = self.error(Xy[:, :-1], Xy[:, -1], [i])
-                attr_errors[i] = error
-                # if i%100 == 0:
-                #     print(i, " error is: ", error)
-        # sort attributes by error
-        sorted_dict = sorted(attr_errors.items(), key=lambda x: x[1])
-        # get best attr
-        best = sorted_dict.pop(0)
-        best_attr, min_error = best[0], best[1]
-        best_attributes = [best_attr]  # remember it
-        while sorted_dict:  # while there are more attributes
-            best = sorted_dict.pop(0)  # get best
-            best_attr = best[0]
-            # check it's combined error with chosen best-attributes
-            error = self.error(Xy[:, :-1], Xy[:, -1],
-                               np.concatenate((best_attributes, [best_attr])))
-            if error < min_error:  # if it helps - keep it
-                min_error = error
-                print('added ', best_attr, "error: ", error)
-                best_attributes.append(best_attr)
+            print("Started FULL feature-pruning.")
+            print("Stage 1 of 2:")
+            for i, att in enumerate(attributes):
+                error = self.error(Xy[:, :-1], Xy[:, -1], [att])
+                attr_errors[att] = error
+                if i%(total_attr//10) == 0:
+                    print("\t", int((100*i/total_attr) + 0.5), end="%\n")
+            print("Stage 2 of 2:")
+            # sort attributes by error
+            sorted_dict = sorted(attr_errors.items(), key=lambda x: x[1])
+            # get best attr and it's error
+            best = sorted_dict.pop(0)
+            best_attr, min_error = best[0], best[1]
+            best_attributes = [best_attr]  # remember it
+            counter, dict_size = 0, len(sorted_dict) + 1
+            while sorted_dict:  # while there are more attributes
+                if counter%(dict_size//10) == 0:
+                    print("\t", int((100*counter/dict_size) + 0.5), end="%\n")
+                counter += 1
+                best = sorted_dict.pop(0)  # get best
+                best_attr = best[0]
+                # check it's combined error with chosen best-attributes
+                error = self.error(Xy[:, :-1], Xy[:, -1],
+                                   np.concatenate((best_attributes, [best_attr])))
+                if error < min_error:  # if it helps - keep it
+                    min_error = error
+                    # print('added ', best_attr, "error: ", error)
+                    best_attributes.append(best_attr)
+        print("Selected", len(best_attributes), "attributes out of",
+              total_attr, "total.")
         self.attributes = np.array(best_attributes)
 
     def build(self, Xy):
@@ -104,13 +148,16 @@ class Classifier:
         data = np.array(data)
         if data.size == 0:
             return 0.5  # as in random
+        if len(data.shape) <= 1:  # if just one instance then array --> matrix
+            data = np.array([data])
         zero_stats = self.stats[0]
         one_stats = self.stats[1]
         if self.attributes is not None:  # if have list of relevant attributes
             data = data[:, self.attributes]
             zero_stats = zero_stats[self.attributes]
             one_stats = one_stats[self.attributes]
-        if attributes is not None:  # if given specific attributes to focus on
+        elif attributes is not None:  # if given specific attributes to
+            # focus on
             data = data[:, attributes]
             zero_stats = zero_stats[attributes]
             one_stats = one_stats[attributes]
@@ -121,7 +168,7 @@ class Classifier:
 
     def error(self, data, labels, attributes=None):
         data = np.array(data)
-        if data.ndim <= 1:
+        if len(data.shape) <= 1:
             return int(self.predict(data, attributes) != labels)
         error = np.sum(labels != self.predict(data, attributes)) / float(
             len(labels))
