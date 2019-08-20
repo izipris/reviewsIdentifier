@@ -20,8 +20,9 @@ def get_all_probs(data, dist):
 
 
 class Classifier:
-    def __init__(self, Xy, attributes=None, prune=False, short_prune=False,
+    def __init__(self, Xy, attributes=None, prune=True, short_prune=False,
                  prune_err_thresh=0.495, prune_attr_thresh=100):
+        print("Started learning process for Bayes Classifier.")
         self.stats = None
         self.attributes = None
         self.short_prune = short_prune
@@ -52,8 +53,8 @@ class Classifier:
                 if error < self.prune_err_thresh:
                     good_enough += 1
                     if good_enough%(self.prune_attr_thresh // 10) == 0:
-                        print("\t", int(100*good_enough /
-                              self.prune_attr_thresh), end="%\n")
+                        print("\t", int((100*good_enough /
+                              self.prune_attr_thresh) + 0.5), end="%\n")
                     if good_enough >= self.prune_attr_thresh:
                         break
         else:
@@ -62,8 +63,8 @@ class Classifier:
             for i, att in enumerate(attributes):
                 error = self.error(Xy[:, :-1], Xy[:, -1], [att])
                 attr_errors[att] = error
-                if i%(total_attr/10) == 0:
-                    print("\t", int(100*i//total_attr), end="%\n")
+                if i%(total_attr//10) == 0:
+                    print("\t", int((100*i/total_attr) + 0.5), end="%\n")
         print("Stage 2 of 2:")
         # sort attributes by error
         sorted_dict = sorted(attr_errors.items(), key=lambda x: x[1])
@@ -74,7 +75,7 @@ class Classifier:
         counter, dict_size = 0, len(sorted_dict) + 1
         while sorted_dict:  # while there are more attributes
             if counter%(dict_size//10) == 0:
-                print("\t", int(100*counter/dict_size), end="%\n")
+                print("\t", int((100*counter/dict_size) + 0.5), end="%\n")
             counter += 1
             best = sorted_dict.pop(0)  # get best
             best_attr = best[0]
@@ -117,13 +118,16 @@ class Classifier:
         data = np.array(data)
         if data.size == 0:
             return 0.5  # as in random
+        if len(data.shape) <= 1:  # if just one instance then array --> matrix
+            data = np.array([data])
         zero_stats = self.stats[0]
         one_stats = self.stats[1]
         if self.attributes is not None:  # if have list of relevant attributes
             data = data[:, self.attributes]
             zero_stats = zero_stats[self.attributes]
             one_stats = one_stats[self.attributes]
-        if attributes is not None:  # if given specific attributes to focus on
+        elif attributes is not None:  # if given specific attributes to
+            # focus on
             data = data[:, attributes]
             zero_stats = zero_stats[attributes]
             one_stats = one_stats[attributes]
@@ -134,7 +138,7 @@ class Classifier:
 
     def error(self, data, labels, attributes=None):
         data = np.array(data)
-        if data.ndim <= 1:
+        if len(data.shape) <= 1:
             return int(self.predict(data, attributes) != labels)
         error = np.sum(labels != self.predict(data, attributes)) / float(
             len(labels))
